@@ -2,7 +2,7 @@
 
 免费个人版 0.9.0。直接在安卓手机上读取课程，保存作业和考试并发送 App 本地通知。电脑关机不影响手机运行，不需要租服务器、填写推送密钥或付费订阅。
 
-安装包：[下载 0.9.0 APK](https://github.com/xxszyh/keqi/releases/download/v0.9.0/%E8%AF%BE%E6%9C%9F-%E5%AE%89%E5%8D%93-v0.9.0.apk) · [查看版本发布](https://github.com/xxszyh/keqi/releases/tag/v0.9.0)。安装包作为 Release 附件保存；Git 仓库包含源码、依赖许可、测试和验证记录。
+安装包：[下载 0.9.0 APK](https://github.com/xxszyh/keqi/releases/download/v0.9.0/keqi-android-v0.9.0.apk) · [查看版本发布](https://github.com/xxszyh/keqi/releases/tag/v0.9.0)。安装包作为 Release 附件保存；Git 仓库包含源码、依赖许可、测试和验证记录。
 
 
 0.9.0 应用列表界面：按日期分组，顶部直接切换作业、测验、考试，课程选择可搜索，同步摘要点击查看完整详情；外观设置支持保存深色模式。现有读取、课程选择与通知规则保留。[本版更新说明](mobile/0.9.0更新说明.md)。
