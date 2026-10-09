@@ -17,8 +17,10 @@ with sync_playwright() as p:
     {id:'done-exam',platform:'chaoxing',courseKey:'cx',courseTitle:'概率论与数理统计',title:'第一次考试',kind:'exam',phase:'exam',status:'done',due:now-3600000,lastSeen:now}],
     courses:[{key:'cx',platform:'chaoxing',title:'概率论与数理统计',enabled:true}],
     connections:[{platform:'chaoxing',connected:true,status:'partial',message:'本轮读取 0 项作业、2 项考试；1 项旧记录本轮未更新，保留供查看；部分内容未更新：作业列表',lastAttempt:now,lastSuccess:now-3600000}],settings:{offsets:[72,24,3]},notificationEnabled:true})""")
-    expect(page.locator('#health-banner')).to_contain_text('2 项考试')
-    expect(page.locator('#health-banner')).to_contain_text('旧记录本轮未更新')
+    page.locator('#health-banner').click()
+    expect(page.locator('#sync-details')).to_contain_text('2 项考试')
+    expect(page.locator('#sync-details')).to_contain_text('旧记录本轮未更新')
+    page.locator('#close-sync').click()
     expect(page.locator('#sync-label')).to_contain_text('上次尝试')
     expect(page.locator('#assignment-list .assignment-card')).to_have_count(2)
     page.locator('#filter-button').click()

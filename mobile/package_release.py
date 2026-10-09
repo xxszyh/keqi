@@ -7,7 +7,7 @@ tools=json.loads((root/'tools.local.json').read_text(encoding='utf-8'))
 info=json.loads((root/'build-info.json').read_text(encoding='utf-8'))
 apk=root/'课期-安卓.apk'
 digest=hashlib.sha256(apk.read_bytes()).hexdigest()
-assert info['version']=='0.8.0' and info['sha256']==digest
+assert info['version']=='0.9.0' and info['sha256']==digest
 assert info.get('source_sha256'), 'Rebuild first to capture compiled source fingerprints'
 for relative,expected in info['source_sha256'].items():
     assert hashlib.sha256((root/relative).read_bytes()).hexdigest()==expected,relative
@@ -20,7 +20,7 @@ with zipfile.ZipFile(apk) as z:
     assert not any(name.endswith('.jar') or name.endswith('.so') for name in z.namelist())
 bt=Path(tools['build_tools'])
 work=bt.parents[1]/'work'
-previous=root/'课期-安卓-v0.7.0.apk'
+previous=root/'课期-安卓-v0.8.0.apk'
 same_signer=None
 with tempfile.TemporaryDirectory(prefix='release-check-',dir=work) as tmp:
     current=Path(tmp)/'current.apk';old=Path(tmp)/'previous.apk'
@@ -38,9 +38,9 @@ with tempfile.TemporaryDirectory(prefix='release-check-',dir=work) as tmp:
         same_signer=True
     run([bt/'zipalign.exe','-c','-p','4',current])
     metadata=run([bt/'aapt2.exe','dump','badging',current])
-    assert "versionCode='8'" in metadata and "versionName='0.8.0'" in metadata
+    assert "versionCode='9'" in metadata and "versionName='0.9.0'" in metadata
     assert ("sdkVersion:'26'" in metadata or "minSdkVersion:'26'" in metadata) and "targetSdkVersion:'35'" in metadata
-versioned=root/'课期-安卓-v0.8.0.apk'
+versioned=root/'课期-安卓-v0.9.0.apk'
 shutil.copy2(apk,versioned)
 archive=root/'课期-安装包.zip'
 with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
@@ -48,9 +48,9 @@ with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
 with zipfile.ZipFile(archive) as z:
     assert set(z.namelist())=={versioned.name,'安装说明.txt'}
     assert hashlib.sha256(z.read(versioned.name)).hexdigest()==digest
-    assert '0.8.0' in z.read('安装说明.txt').decode('utf-8')
-report={'version':'0.8.0','version_code':8,'bytes':apk.stat().st_size,'sha256':digest,
-        'same_signer_as_0.7.0':same_signer,'v2_v3_verified':True,'zip_aligned':True,
+    assert '0.9.0' in z.read('安装说明.txt').decode('utf-8')
+report={'version':'0.9.0','version_code':9,'bytes':apk.stat().st_size,'sha256':digest,
+        'same_signer_as_0.8.0':same_signer,'v2_v3_verified':True,'zip_aligned':True,
         'compiled_source_matches_workspace':True,'bundled_assets_match_source':True,
         'exam_reader_modules_present':True,'zip_contents_verified':True,'min_sdk':26,'target_sdk':35,
         'phone_real_exam_coverage_verified':False,'phone_real_response_body_captured':False,

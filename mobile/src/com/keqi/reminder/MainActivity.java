@@ -20,8 +20,8 @@ public final class MainActivity extends Activity {
     private final ExecutorService collector=Executors.newSingleThreadExecutor();
     private final java.util.concurrent.atomic.AtomicBoolean syncRequested=new java.util.concurrent.atomic.AtomicBoolean(false);
     protected void onCreate(Bundle saved){
-        super.onCreate(saved);getWindow().setStatusBarColor(0xfff8f8fc);getWindow().setNavigationBarColor(0xffffffff);
-        Notifications.create(this);web=new WebView(this);web.setBackgroundColor(0xfff8f8fc);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(false);web.getSettings().setAllowFileAccess(true);web.getSettings().setAllowContentAccess(false);
+        super.onCreate(saved);
+        Notifications.create(this);web=new WebView(this);try(Store store=new Store(this)){applyAppearance(store.settings().optBoolean("darkMode",false));}web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(false);web.getSettings().setAllowFileAccess(true);web.getSettings().setAllowContentAccess(false);
         web.getSettings().setAllowFileAccessFromFileURLs(false);web.getSettings().setAllowUniversalAccessFromFileURLs(false);
         web.addJavascriptInterface(new Bridge(),"Native");
         web.setWebChromeClient(new WebChromeClient(){
@@ -49,7 +49,12 @@ public final class MainActivity extends Activity {
     }
     public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
     private void message(String text){runOnUiThread(()->{if(web!=null)web.evaluateJavascript("if(window.onNativeMessage)window.onNativeMessage("+JSONObject.quote(text)+")",null);});}
-    private void refresh(){if(worker.isShutdown())return;worker.execute(()->{try(Store store=new Store(this)){String data=store.snapshot(SyncEngine.BUSY.get()).toString();runOnUiThread(()->{if(web!=null)web.evaluateJavascript("if(window.onNativeState)window.onNativeState("+data+")",null);});}catch(Exception e){message("读取本机数据失败");}});}
+    private void applyAppearance(boolean dark){
+        int color=dark?0xff1e2420:0xffffffff;getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);if(web!=null)web.setBackgroundColor(color);
+        android.view.View decor=getWindow().getDecorView();int flags=decor.getSystemUiVisibility();int light=android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        decor.setSystemUiVisibility(dark?flags&~light:flags|light);
+    }
+    private void refresh(){if(worker.isShutdown())return;worker.execute(()->{try(Store store=new Store(this)){String data=store.snapshot(SyncEngine.BUSY.get()).toString();boolean dark=store.settings().optBoolean("darkMode",false);runOnUiThread(()->{if(web!=null){applyAppearance(dark);web.evaluateJavascript("if(window.onNativeState)window.onNativeState("+data+")",null);}});}catch(Exception e){message("读取本机数据失败");}});}
     private final class Bridge {
         @JavascriptInterface public void action(String action,String payload){
             if(action.equals("login")){try{String p=new JSONObject(payload).getString("platform");if(!Arrays.asList("mooc","chaoxing").contains(p))return;runOnUiThread(()->startActivity(new Intent(MainActivity.this,LoginActivity.class).putExtra("platform",p)));}catch(Exception ignored){}return;}
@@ -70,13 +75,14 @@ public final class MainActivity extends Activity {
                         case "testNotification":message(Notifications.post(MainActivity.this,"test","课期通知测试","你可以在这里收到作业和考试截止提醒。")?"测试通知已提交给手机系统":"请先开启 App 通知权限");break;
                         case "saveSettings":
                             JSONObject settings=store.settings();Iterator<String> keys=data.keys();
-                            while(keys.hasNext()){String k=keys.next();if(!Arrays.asList("offsets","syncMinutes","quietStart","quietEnd","urgentOverride","chaoxingYear").contains(k))continue;
+                            while(keys.hasNext()){String k=keys.next();if(!Arrays.asList("offsets","syncMinutes","quietStart","quietEnd","urgentOverride","chaoxingYear","darkMode").contains(k))continue;
+                                if(k.equals("darkMode"))data.getBoolean(k);
                                 if(k.equals("offsets")){JSONArray offsets=data.getJSONArray(k);if(offsets.length()<1||offsets.length()>12)throw new IllegalArgumentException("提醒档数应为 1～12");for(int i=0;i<offsets.length();i++)if(!Double.isFinite(offsets.getDouble(i))||offsets.getDouble(i)<=0||offsets.getDouble(i)>720)throw new IllegalArgumentException("提醒小时范围为 0～720");}
                                 if(k.equals("syncMinutes")&&!Arrays.asList(30,60,180).contains(data.getInt(k)))throw new IllegalArgumentException("不支持的检测间隔");
                                 if((k.equals("quietStart")||k.equals("quietEnd"))&&!data.getString(k).matches("(?:[01]\\d|2[0-3]):[0-5]\\d|"))throw new IllegalArgumentException("免打扰时间格式不正确");
                                 if(k.equals("chaoxingYear")&&!data.isNull(k)&&(data.getInt(k)<2000||data.getInt(k)>2100))throw new IllegalArgumentException("年份不正确");
                                 settings.put(k,data.get(k));
-                            }store.putMeta("settings",settings);SyncJob.schedule(MainActivity.this);Notifications.rebuild(MainActivity.this);message("设置已保存" );
+                            }store.putMeta("settings",settings);if(data.length()!=1||!data.has("darkMode")){SyncJob.schedule(MainActivity.this);Notifications.rebuild(MainActivity.this);}message("设置已保存" );
                             if(data.has("chaoxingYear")&&store.meta("connection.chaoxing").optBoolean("connected")){message("年份已保存，正在重新读取截止时间");startSync();}break;
                         case "updateTask":
                             store.patchTask(data);Notifications.rebuild(MainActivity.this);message("已更新本机记录");break;

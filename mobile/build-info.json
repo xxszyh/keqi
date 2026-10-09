@@ -1,11 +1,11 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "min_sdk": 26,
   "target_sdk": 35,
   "package": "com.keqi.reminder",
   "apk": "课期-安卓.apk",
-  "bytes": 545719,
-  "sha256": "93258a6fda566c86b7fcd5c7d2c3812bf2d04f7101ba840e0866c66963f3ea8d",
+  "bytes": 549815,
+  "sha256": "a15f7a337a253740274c916c1485348aa225a1ccb386f67b39b5482ce8d8a838",
   "checks": [
     "APK signature verification",
     "ZIP alignment",
@@ -32,7 +32,7 @@
     "src/com/keqi/reminder/Http.java": "bf99494557b9b84259ea56ed27a9490d0a17dc181814c327c2e49bf9117bd796",
     "src/com/keqi/reminder/LoginActivity.java": "2b52d08d70b0448c8073c62a2b8b733e8e16b4cbfc15dacd609e7a688f881564",
     "src/com/keqi/reminder/LoginNavigation.java": "485ac4db9fa4b450b2141f804cee89a6a3371673ddd4cb0a5ebbd55a9d41af88",
-    "src/com/keqi/reminder/MainActivity.java": "cfd74d31860731e6b8296267ac3d64cd3ff5aaf771905363d6e864111cc8879b",
+    "src/com/keqi/reminder/MainActivity.java": "baf288f85e6e51b67c2ae7bafb0865175087cdda3a78f8637086e53bb8b1819e",
     "src/com/keqi/reminder/MoocCourses.java": "0d06c2f460eae9acb52bac9cd68427450b666e5f692d4e6688a6e0ed26c78e11",
     "src/com/keqi/reminder/Notifications.java": "5790aa8e332bad60efae5880f21bb601632483ae39e9fe9db08e1435f96ecdf1",
     "src/com/keqi/reminder/Secrets.java": "c0ec45a338e9bdc50faec65d80d282b3dc140b003f46b29fb5c03ddca126c655",
@@ -41,13 +41,13 @@
     "src/com/keqi/reminder/SyncEngine.java": "b1cbcbfe55ea7dae989de889351310f1a36052db527c80e96c0c03e17e5bf76f",
     "src/com/keqi/reminder/SyncJob.java": "73e0d2ffce43e9195a3a1db9ae526bc9f7b9c6ae43a4a8c9c21c568bc2fa90fb",
     "res/drawable/app_icon.xml": "84f50bfa7134497793bcc38c859048fa2f304bc7ff27c1067e9af353c7258036",
-    "assets/app.css": "546ef88c3d814163a79591979a052ade6b7d52fbbce8af5e07297efe0e163ce3",
-    "assets/app.js": "3145d5fc601de8f70b5c932c2171435a727711085bf7db58763c6dbbac2f0a36",
-    "assets/index.html": "016e632cf969aac7e15620ad73359db2d2b04c3dd7873182d4dc591c99d52d0a",
+    "assets/app.css": "9921efd3091e096ee433539febbd5ac59b954d6fc9466aeb4a544a9cdd262dd0",
+    "assets/app.js": "e93f7545f01dc5f9ccfa4bb7bfae3bed6cb9de5b3446c608134036e3ba6d140b",
+    "assets/index.html": "83315147da0891b3dc39e742a5dcb3a1758028e703660686d8a39ff849e67206",
     "assets/licenses.html": "046f5221871a3a5196ebb4569ad734f0e57003398d6b332328cd0a4862f3cc97",
     "assets/licenses/jsoup.txt": "ca4cb6a347e7801ad8f65f309536a047632250c0b0ecb60a8e690c730e96e978",
     "assets/licenses/MOOC_reminder.txt": "daf8956a0303eeea5a5899f146025a5addd96f59b3ffb0684797094769c8f082",
     "assets/licenses/Xuexitong-mcp.txt": "9e89ba316395da8402e5268f8dbc85e379a3f7d6e71ab6bc378ee1de663ced75",
-    "AndroidManifest.xml": "4671779209e2847142dcc8f67cf927add6aa2aab1e118f1bc0498c9df45712df"
+    "AndroidManifest.xml": "ccaa0ec7376581efa21c0403e8b6a0c6ee97e93ee4c26e1c90fd14f2ace961b9"
   }
 }

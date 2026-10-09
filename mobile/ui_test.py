@@ -20,6 +20,7 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
     checks += 3
     page.screenshot(path=str(out / '作业总览-示例.png'), full_page=True)
+    page.locator('#search-button').click()
     page.locator('#search').fill('链表')
     expect(page.locator('#assignment-list .assignment-card')).to_have_count(1)
     page.locator('#assignment-list .assignment-card').click()

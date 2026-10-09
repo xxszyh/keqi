@@ -1,10 +1,13 @@
 # 课期：MOOC / 学习通安卓作业与考试提醒
 
-免费个人版 0.8.0。直接在安卓手机上读取课程，保存作业和考试并发送 App 本地通知。电脑关机不影响手机运行，不需要租服务器、填写推送密钥或付费订阅。
+免费个人版 0.9.0。直接在安卓手机上读取课程，保存作业和考试并发送 App 本地通知。电脑关机不影响手机运行，不需要租服务器、填写推送密钥或付费订阅。
 
-安装包：[下载 0.8.0 APK](https://github.com/xxszyh/keqi/releases/download/v0.8.0/%E8%AF%BE%E6%9C%9F-%E5%AE%89%E5%8D%93-v0.8.0.apk) · [查看版本发布](https://github.com/xxszyh/keqi/releases/tag/v0.8.0)。安装包作为 Release 附件保存；Git 仓库包含源码、依赖许可、测试和验证记录。
+安装包：[下载 0.9.0 APK](https://github.com/xxszyh/keqi/releases/download/v0.9.0/%E8%AF%BE%E6%9C%9F-%E5%AE%89%E5%8D%93-v0.9.0.apk) · [查看版本发布](https://github.com/xxszyh/keqi/releases/tag/v0.9.0)。安装包作为 Release 附件保存；Git 仓库包含源码、依赖许可、测试和验证记录。
 
-0.8.0 加入学习通考试读取：分别读取课程考试卡片和考试安排表，根据平台提供的课程、班级和考试身份归入已连接课程，沿用课程勾选设置。考试进入待办、截止日历和本地提醒；「筛选 → 类型 → 考试」可以单独查看。无法唯一关联课程的记录归入可勾选的「其他考试（未关联课程）」，缺少稳定考试编号会提示未纳入提醒。同步只访问列表，不进入开始考试或作答页面。
+
+0.9.0 应用列表界面：按日期分组，顶部直接切换作业、测验、考试，课程选择可搜索，同步摘要点击查看完整详情；外观设置支持保存深色模式。现有读取、课程选择与通知规则保留。[本版更新说明](mobile/0.9.0更新说明.md)。
+
+0.8.0 加入学习通考试读取：分别读取课程考试卡片和考试安排表，根据平台提供的课程、班级和考试身份归入已连接课程，沿用课程勾选设置。考试进入待办、截止日历和本地提醒；顶部「考试」可以单独查看。无法唯一关联课程的记录归入可勾选的「其他考试（未关联课程）」，缺少稳定考试编号会提示未纳入提醒。同步只访问列表，不进入开始考试或作答页面。
 
 已修正可复现的官方课程跳转页面识别问题。同步结果分别显示本轮读取的作业、考试数量以及本轮未更新的旧记录；作业列表更新而详情失败时，会明确说明并保留旧截止日期。上次尝试和上次完整同步分开显示。真实手机上的全部考试覆盖和仍异常的页面需要核对，截图不能确定所有页面失败原因。
 
@@ -60,6 +63,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe mobile\chaoxing_connection_test.py
 .\.venv\Scripts\python.exe mobile\ui_test.py
 .\.venv\Scripts\python.exe mobile\exam_ui_test.py
+.\.venv\Scripts\python.exe mobile\list_ui_test.py
 .\.venv\Scripts\python.exe mobile\course_visibility_test.py
 .\.venv\Scripts\python.exe mobile\chaoxing_course_selection_test.py
 .\.venv\Scripts\python.exe mobile\course_name_test.py
