@@ -34,8 +34,10 @@ public final class Store extends SQLiteOpenHelper {
         try{
             JSONObject active=meta("connection."+platform);
             if(!active.optBoolean("connected")||!active.optString("account").equals(expectedAccount))return;
+            JSONArray mergedCourses=CourseSelection.merge(active.optJSONArray("courses"),courses);
             for(int i=0;i<incoming.length();i++){
                 JSONObject fresh=incoming.getJSONObject(i),old=task(fresh.getString("id"));
+                if(CourseSelection.removed(mergedCourses,fresh.optString("courseKey")))continue;
                 long now=System.currentTimeMillis();fresh.put("lastSeen",now);
                 if(fresh.optBoolean("deadlineObserved",true))fresh.put("deadlineCheckedAt",now);
                 else if(old!=null)fresh.put("deadlineCheckedAt",old.optLong("deadlineCheckedAt",old.optLong("lastSeen")));
@@ -51,7 +53,6 @@ public final class Store extends SQLiteOpenHelper {
             }
             JSONObject connection=meta("connection."+platform);connection.put("platform",platform).put("status",status).put("message",message).put("lastAttempt",System.currentTimeMillis());
             if(status.equals("ok"))connection.put("lastSuccess",System.currentTimeMillis());
-            JSONArray mergedCourses=CourseSelection.merge(connection.optJSONArray("courses"),courses);
             connection.put("courses",mergedCourses);putMeta("connection."+platform,connection);
             // Rename even cached/hidden homework without changing reminder versions or dates.
             JSONArray renamed=CourseSelection.refreshTaskTitles(tasks(),mergedCourses);
@@ -65,8 +66,15 @@ public final class Store extends SQLiteOpenHelper {
     }
     public synchronized void enableCourses(Set<String> keys,boolean enabled) throws JSONException {
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
-        try{for(String p:new String[]{"mooc","chaoxing"}){JSONObject c=meta("connection."+p);JSONArray courses=c.optJSONArray("courses");if(courses==null)continue;for(int i=0;i<courses.length();i++)if(keys.contains(courses.getJSONObject(i).getString("key")))courses.getJSONObject(i).put("enabled",enabled);putMeta("connection."+p,c);}db.setTransactionSuccessful();}finally{db.endTransaction();}
+        try{for(String p:new String[]{"mooc","chaoxing"}){JSONObject c=meta("connection."+p);JSONArray courses=c.optJSONArray("courses");if(courses==null)continue;for(int i=0;i<courses.length();i++)if(keys.contains(courses.getJSONObject(i).getString("key"))&&!courses.getJSONObject(i).optBoolean("removed",false))courses.getJSONObject(i).put("enabled",enabled);putMeta("connection."+p,c);}db.setTransactionSuccessful();}finally{db.endTransaction();}
     }
+    public synchronized void applyCourseChoices(JSONObject choices,Set<String> remove,Set<String> restore) throws JSONException {
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
+            JSONArray updated=CourseSelection.applyChoices(courses(),choices,remove,restore);
+            for(String p:new String[]{"mooc","chaoxing"}){JSONObject connection=meta("connection."+p);JSONArray own=new JSONArray();for(int i=0;i<updated.length();i++){JSONObject c=updated.getJSONObject(i);if(c.optString("platform").equals(p))own.put(c);}connection.put("courses",own);putMeta("connection."+p,connection);}db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
+    public boolean removed(String key){return CourseSelection.removed(courses(),key);}
     public synchronized boolean connectionError(String platform,String expectedAccount,String state,String message) throws JSONException {
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
         try{JSONObject c=meta("connection."+platform);if(!c.optBoolean("connected")||!c.optString("account").equals(expectedAccount))return false;boolean changed=!c.optString("status").equals(state);c.put("status",state).put("message",message).put("lastAttempt",System.currentTimeMillis());putMeta("connection."+platform,c);db.setTransactionSuccessful();return changed;}finally{db.endTransaction();}
@@ -79,7 +87,7 @@ public final class Store extends SQLiteOpenHelper {
             putMeta("connection."+platform,c);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
-    public boolean enabled(String courseKey){JSONArray cs=courses();for(int i=0;i<cs.length();i++){JSONObject c=cs.optJSONObject(i);if(c!=null&&c.optString("key").equals(courseKey))return c.optBoolean("enabled",true);}return true;}
+    public boolean enabled(String courseKey){JSONArray cs=courses();for(int i=0;i<cs.length();i++){JSONObject c=cs.optJSONObject(i);if(c!=null&&c.optString("key").equals(courseKey))return !c.optBoolean("removed",false)&&c.optBoolean("enabled",true);}return true;}
     public synchronized void notice(String key,String taskId,int version,String kind,long due,String state){ContentValues v=new ContentValues();v.put("key",key);v.put("task_id",taskId);v.put("version",version);v.put("kind",kind);v.put("due",due);v.put("state",state);getWritableDatabase().insertWithOnConflict("notices",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
     public String noticeState(String key){try(Cursor c=getReadableDatabase().rawQuery("SELECT state FROM notices WHERE key=?",new String[]{key})){return c.moveToFirst()?c.getString(0):"";}}
     public synchronized void noticeState(String key,String state){ContentValues v=new ContentValues();v.put("state",state);getWritableDatabase().update("notices",v,"key=?",new String[]{key});}
@@ -87,6 +95,8 @@ public final class Store extends SQLiteOpenHelper {
     public synchronized void disconnect(String platform){SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{db.delete("tasks","platform=?",new String[]{platform});JSONObject c=new JSONObject().put("platform",platform).put("status","unconfigured");putMeta("connection."+platform,c);db.setTransactionSuccessful();}catch(JSONException e){throw new IllegalStateException(e);}finally{db.endTransaction();}}
     public JSONObject snapshot(boolean syncing) throws JSONException {
         JSONArray connections=new JSONArray();for(String p:new String[]{"mooc","chaoxing"}){JSONObject c=meta("connection."+p);if(!c.has("platform"))c.put("platform",p).put("status","unconfigured");connections.put(c);}
-        return new JSONObject().put("tasks",tasks()).put("connections",connections).put("courses",courses()).put("settings",settings()).put("syncing",syncing).put("notificationEnabled",Notifications.enabled(context));
+        JSONArray all=courses(),removed=new JSONArray();for(int i=0;i<all.length();i++)if(all.getJSONObject(i).optBoolean("removed",false))removed.put(all.getJSONObject(i));
+        for(int i=0;i<connections.length();i++){JSONObject c=connections.getJSONObject(i);JSONArray own=c.optJSONArray("courses");if(own!=null)c.put("courses",CourseSelection.displayed(own));}
+        return new JSONObject().put("tasks",CourseSelection.visibleTasks(tasks(),all)).put("connections",connections).put("courses",CourseSelection.displayed(all)).put("removedCourses",removed).put("settings",settings()).put("syncing",syncing).put("notificationEnabled",Notifications.enabled(context));
     }
 }

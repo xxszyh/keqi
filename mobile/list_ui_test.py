@@ -37,13 +37,14 @@ with sync_playwright() as p:
     page.locator('#assignment-list [data-local-task=today-exam]').click()
     expect(page.locator('#assignment-list [data-task=today-exam]')).to_have_count(0)
     assert page.evaluate("state.tasks.find(t=>t.id==='today-exam').status")=='pending'
-    page.locator('[data-select-courses]').click()
+    page.locator('#course-picker-button').click();page.locator('#picker-management').click()
     page.locator('#course-search').fill('大学英语')
     expect(page.locator('#course-dialog .course-switch:visible')).to_have_count(1)
     page.evaluate('onNativeState(JSON.stringify(state))')
     expect(page.locator('#course-dialog .course-switch:visible')).to_have_count(1)
     page.locator('#close-courses').click()
     page.locator('nav [data-page=settings]').click()
+    page.locator('[data-settings-open=appearance]').click()
     page.locator('#dark-mode').check()
     assert page.evaluate('state.settings.darkMode') is True
     assert page.evaluate('document.documentElement.classList.contains("dark")')
@@ -58,7 +59,7 @@ with sync_playwright() as p:
     for width in [320,390,780]:
         page.set_viewport_size({'width':width,'height':844})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        page.locator('[data-select-courses]').click()
+        page.locator('#course-picker-button').click();page.locator('#picker-management').click()
         assert page.locator('#course-dialog').evaluate('(el)=>el.scrollWidth<=el.clientWidth')
         page.locator('#close-courses').click()
     page.evaluate("state.tasks[0].title='<img src=x onerror=alert(1)>';state.tasks[0].courseTitle='<svg onload=alert(1)>';document.querySelector('#kind-filter').value='all';render()")

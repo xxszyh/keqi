@@ -47,7 +47,7 @@ public final class MainActivity extends Activity {
         if(collector.isShutdown()||!syncRequested.compareAndSet(false,true))return;
         collector.execute(()->{try{SyncEngine.sync(getApplicationContext(),this::refresh);message("本轮检测已完成，请查看平台同步状态");}finally{syncRequested.set(false);refresh();}});
     }
-    public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
+    public void onBackPressed(){if(web==null){super.onBackPressed();return;}web.evaluateJavascript("window.handleBack?window.handleBack():false",handled->{if(!"true".equals(handled)){if(web!=null&&web.canGoBack())web.goBack();else MainActivity.super.onBackPressed();}});}
     private void message(String text){runOnUiThread(()->{if(web!=null)web.evaluateJavascript("if(window.onNativeMessage)window.onNativeMessage("+JSONObject.quote(text)+")",null);});}
     private void applyAppearance(boolean dark){
         int color=dark?0xff1e2420:0xffffffff;getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);if(web!=null)web.setBackgroundColor(color);
@@ -91,6 +91,11 @@ public final class MainActivity extends Activity {
                         case "toggleCourses":
                             JSONArray courseKeys=data.getJSONArray("keys");Set<String> selected=new HashSet<>();for(int i=0;i<courseKeys.length();i++)selected.add(courseKeys.getString(i));
                             store.enableCourses(selected,data.getBoolean("enabled"));Notifications.rebuild(MainActivity.this);break;
+                        case "applyCourseChoices":{
+                            Set<String> remove=new HashSet<>(),restore=new HashSet<>();JSONArray removing=data.optJSONArray("remove"),restoring=data.optJSONArray("restore");
+                            if(removing!=null)for(int i=0;i<removing.length();i++)remove.add(removing.getString(i));if(restoring!=null)for(int i=0;i<restoring.length();i++)restore.add(restoring.getString(i));
+                            store.applyCourseChoices(data.optJSONObject("choices")==null?new JSONObject():data.getJSONObject("choices"),remove,restore);Notifications.rebuild(MainActivity.this);message("课程设置已保存");break;
+                        }
                         case "disconnect":
                             String platform=data.getString("platform");if(!Arrays.asList("mooc","chaoxing").contains(platform))throw new IllegalArgumentException("不支持的平台");store.disconnect(platform);Sessions.clear(MainActivity.this,platform);Notifications.rebuild(MainActivity.this);message("已断开平台，停止该平台提醒");break;
                         case "openSource":

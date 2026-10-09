@@ -66,7 +66,7 @@ public final class SyncEngine {
         }
         JSONArray courses=CourseSelection.merge(config.optJSONArray("courses"),discovered);
         // Publish catalog choices before slower homework requests; a later failure keeps them.
-        store.ingest("chaoxing",account(config),new JSONArray(),courses,"partial","已读取 "+courses.length()+" 门课程，可选择要显示的课程；正在同步作业和考试");stateChanged.run();
+        store.ingest("chaoxing",account(config),new JSONArray(),courses,"partial","已读取 "+CourseSelection.displayed(courses).length()+" 门课程，可选择要显示的课程；正在同步作业和考试");stateChanged.run();
         Integer year=store.settings().isNull("chaoxingYear")?null:store.settings().getInt("chaoxingYear");
         ChaoxingTaskReader.Result result=ChaoxingTaskReader.read(reader::get,courses,account(config),year,store::enabled,warnings,()->Thread.sleep(300));
         store.verificationPage("chaoxing",account(config),result.verification.isEmpty()?reader.verificationTarget():result.verification);
@@ -83,7 +83,7 @@ public final class SyncEngine {
         if(discovered.length()==0&&!apiComplete)warnings.add("本轮未发现课程范围，需在平台“我的课程”页确认");
         JSONArray tasks=new JSONArray();
         for(int i=0;i<courses.length();i++){
-            if(Thread.currentThread().isInterrupted())throw new InterruptedException();JSONObject co=courses.getJSONObject(i);
+            if(Thread.currentThread().isInterrupted())throw new InterruptedException();JSONObject co=courses.getJSONObject(i);if(store.removed(co.getString("key")))continue;
             try{
                 JSONObject dto=null;
                 String[] methods={"getLastLearnedMocTermDto","getMocTermDto","getMocTermDto"};
@@ -98,6 +98,6 @@ public final class SyncEngine {
             }catch(Http.LoginRequired e){throw e;}catch(InterruptedException e){throw e;}catch(Exception e){warnings.add(co.getString("title")+"："+safeError(e));}
             Thread.sleep(300);
         }
-        store.ingest("mooc",account(config),tasks,courses,warnings.isEmpty()?"ok":"partial",warnings.isEmpty()?"已同步 "+courses.length()+" 门已发现课程，请核对课程范围":String.join("；",warnings.subList(0,Math.min(5,warnings.size()))));
+        store.ingest("mooc",account(config),tasks,courses,warnings.isEmpty()?"ok":"partial",warnings.isEmpty()?"已同步 "+CourseSelection.displayed(CourseSelection.merge(config.optJSONArray("courses"),courses)).length()+" 门已发现课程，请核对课程范围":String.join("；",warnings.subList(0,Math.min(5,warnings.size()))));
     }
 }

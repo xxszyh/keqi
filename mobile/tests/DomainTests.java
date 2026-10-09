@@ -88,6 +88,26 @@ public final class DomainTests {
         JSONArray renamed=CourseSelection.refreshTaskTitles(new JSONArray().put(cachedTask).put(otherTask),repaired);
         check(renamed.length()==1&&renamed.getJSONObject(0).toString().equals(expectedTask),"course refresh renames cached homework without changing identity, reminder version, deadlines or local edits");
         check(otherTask.getString("courseTitle").equals("课程 255733792"),"name updates stay on the matching course enrollment");
+        JSONArray removable=new JSONArray().put(new JSONObject().put("key","m").put("platform","mooc").put("title","不需要的课程").put("enabled",true)).put(new JSONObject().put("key","keep").put("platform","chaoxing").put("enabled",true));
+        JSONArray removedCourses=CourseSelection.applyChoices(removable,new JSONObject(),Collections.singleton("m"),Collections.emptySet());
+        check(CourseSelection.removed(removedCourses,"m")&&!CourseSelection.removed(removable,"m"),"removal is independent of enable and does not mutate the previous snapshot");
+        JSONArray serialized=new JSONArray(removedCourses.toString());
+        JSONArray rediscovered=CourseSelection.merge(serialized,new JSONArray().put(new JSONObject().put("key","m").put("platform","mooc").put("title","更新的名字").put("enabled",true)));
+        check(CourseSelection.removed(rediscovered,"m")&&CourseSelection.displayed(rediscovered).length()==1,"serialized removal survives automatic rediscovery and filters ordinary course views");
+        JSONArray selectedTasks=new JSONArray().put(new JSONObject().put("id","removed-exam").put("courseKey","m")).put(new JSONObject().put("id","kept-work").put("courseKey","keep"));
+        check(CourseSelection.visibleTasks(selectedTasks,rediscovered).length()==1&&CourseSelection.visibleTasks(selectedTasks,rediscovered).getJSONObject(0).getString("id").equals("kept-work"),"removed courses exclude both exam and homework snapshots");
+        JSONArray restored=CourseSelection.applyChoices(rediscovered,new JSONObject(),Collections.emptySet(),Collections.singleton("m"));
+        check(!CourseSelection.removed(restored,"m")&&CourseSelection.visibleTasks(selectedTasks,restored).length()==2,"explicit reimport restores cached records without deleting another course");
+        JSONArray disabled=CourseSelection.applyChoices(removable,new JSONObject().put("m",false),Collections.emptySet(),Collections.emptySet());
+        check(!CourseSelection.removed(disabled,"m")&&CourseSelection.displayed(disabled).length()==2,"disabling reminders keeps a course available for management");
+        JSONObject removedClass=new JSONObject(pending.toString()).put("removed",true);
+        JSONArray alias=CourseSelection.merge(new JSONArray().put(removedClass),new JSONArray().put(new JSONObject(completed.toString())));
+        check(alias.length()==1&&alias.getJSONObject(0).optBoolean("removed"),"removal follows the same enrollment when Chaoxing adds CPI metadata");
+        JSONArray newClass=CourseSelection.merge(alias,new JSONArray().put(new JSONObject(anotherClass.toString())));
+        check(CourseSelection.displayed(newClass).length()==1,"another enrollment in the same course is not accidentally removed");
+        boolean rejected=false;try{CourseSelection.applyChoices(removable,new JSONObject().put("stale-key",true),Collections.emptySet(),Collections.emptySet());}catch(IllegalArgumentException e){rejected=true;}
+        check(rejected&&removable.getJSONObject(0).getBoolean("enabled"),"stale course edits reject atomically instead of partially changing selections");
+        check(!CourseSelection.removed(CourseSelection.merge(null,new JSONArray().put(new JSONObject().put("key","m"))),"m"),"new account does not inherit another account's removal");
         System.out.println("Passed "+checks+" domain/adapter checks.");
     }
 }

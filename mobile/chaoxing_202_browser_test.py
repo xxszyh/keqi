@@ -72,6 +72,8 @@ with sync_playwright() as p:
     page.goto((r/'assets/index.html').as_uri())
     page.evaluate("state.connections.find(c=>c.platform==='chaoxing').verificationUrl='https://mooc1.chaoxing.com/mycourse/studentcourse?courseId=1&clazzid=2&cpi=3';onNativeState(JSON.stringify(state))")
     page.locator('nav [data-page=settings]').click()
+    page.locator('[data-settings-open=platforms]').click()
+    page.locator('#connections [data-platform=chaoxing]').click()
     expect(page.locator('[data-verify-platform=chaoxing]')).to_have_text('打开验证页面');checks+=1
     page.evaluate('window.calls=[];window.Native={action:(action,payload)=>calls.push({action,data:JSON.parse(payload)})}')
     page.locator('[data-verify-platform=chaoxing]').click()

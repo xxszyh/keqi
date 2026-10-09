@@ -43,13 +43,21 @@ with sync_playwright() as p:
     page.locator('#calendar-today').click()
     page.screenshot(path=str(out / '截止日历-示例.png'), full_page=True)
     page.locator('nav [data-page=settings]').click()
-    page.locator('#offsets').fill('48,12,2')
+    page.locator('[data-settings-open=reminders]').click()
+    for n in [72,24,3]: page.locator(f'[data-offset="{n}"]').click()
+    for n in [48,12,2]:
+        page.locator('#custom-hours').fill(str(n));page.locator('#add-reminder').click()
     page.locator('#save-settings').click()
     assert page.evaluate('state.settings.offsets') == [48,12,2]
+    page.locator('#settings-back').click()
+    page.locator('[data-settings-open=platforms]').click()
+    page.locator('#connections [data-platform=chaoxing]').click()
     page.once('dialog', lambda dialog: dialog.accept('2026'))
-    page.locator('[data-year]').click()
+    page.locator('#platform-dialog [data-year]').click()
     assert page.evaluate('state.settings.chaoxingYear') == 2026
-    page.locator('#course-settings [data-course=cx-ds]').uncheck()
+    page.locator('#platform-dialog [data-select-platform-courses=chaoxing]').click()
+    page.locator('#course-dialog [data-course=cx-ds]').uncheck()
+    page.locator('#close-courses').click()
     assert page.evaluate("state.courses.find(c=>c.key==='cx-ds').enabled") is False
     checks += 4
     page.screenshot(path=str(out / '连接与提醒-示例.png'), full_page=True)
@@ -64,14 +72,20 @@ with sync_playwright() as p:
     expect(live.locator('#preview-banner')).to_be_hidden()
     expect(live.locator('#assignment-list .assignment-card')).to_have_count(0)
     live.locator('[data-go-settings]').click()
+    live.locator('#connections [data-platform=mooc]').click()
     live.locator('[data-login=mooc]').click()
+    live.locator('#close-platform').click()
     assert live.evaluate('window.lastNativeAction') == ['login', {'platform':'mooc'}]
     checks += 3
     live.evaluate("onNativeState({tasks:[],connections:[],courses:[{key:'first',title:'课程一',platform:'mooc'},{key:'second',title:'课程二',platform:'mooc'}],settings:{offsets:[72,24,3]},notificationEnabled:false})")
     live.locator('nav [data-page=tasks]').click()
-    live.locator('[data-select-courses]').click()
+    live.locator('#course-picker-button').click();live.locator('#picker-management').click()
+    live.locator('[data-course-expand=mooc]').click()
     live.locator('#course-dialog [data-course-bulk=hide]').click()
-    assert live.evaluate('window.lastNativeAction') == ['toggleCourses',{'keys':['first','second'],'enabled':False}]
+    live.locator('#close-courses').click()
+    assert live.evaluate('window.lastNativeAction') == ['applyCourseChoices',{'choices':{'first':False,'second':False},'remove':[]}]
+    live.locator('#course-picker-button').click();live.locator('#picker-management').click()
+    live.locator('[data-course-expand=mooc]').click()
     live.evaluate("state.courses[0].enabled=false;onNativeState(JSON.stringify(state))")
     expect(live.locator('#course-dialog [data-course=first]')).not_to_be_checked()
     checks += 2
