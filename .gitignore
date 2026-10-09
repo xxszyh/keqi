@@ -1,0 +1,19 @@
+.venv/
+.data/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+screenshots/
+mobile/build/
+mobile/debug/
+mobile/tools.local.json
+*.keystore
+*.apk.idsig
+# Installers are published as GitHub Release assets.
+*.apk
+*.zip
+*.jks
+*.p12
+*.pfx
+.codex-remote-attachments/

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f8f8fc"><title>课期 · 作业与考试提醒</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand"><span class="brand-icon">课</span><div><strong>课期</strong><small>把每次截止，记在一起</small></div></div><button id="refresh" class="icon-button" aria-label="同步作业和考试">↻</button></header>
+    <div id="preview-banner" class="notice hidden">界面预览 · 示例任务，不是你的真实课程</div>
+    <div id="health-banner" class="notice hidden"></div>
+    <main>
+      <section id="tasks-page" class="page">
+        <div class="heading"><div><p id="today" class="eyebrow"></p><h1>待办总览</h1></div><span id="sync-label" class="muted"></span></div>
+        <div class="metrics">
+          <button data-filter="urgent"><span class="metric-icon coral">◷</span><strong id="count-urgent">0</strong><small>24 小时内</small></button>
+          <button data-filter="week"><span class="metric-icon violet">▤</span><strong id="count-week">0</strong><small>7 天内待办</small></button>
+          <button data-filter="overdue"><span class="metric-icon orange">!</span><strong id="count-overdue">0</strong><small>已逾期待办</small></button>
+          <button data-filter="unknown"><span class="metric-icon blue">?</span><strong id="count-unknown">0</strong><small>截止待确认</small></button>
+        </div>
+        <div class="toolbar"><input id="search" type="search" placeholder="搜索作业、考试或课程" aria-label="搜索作业、考试或课程"><button id="filter-button" class="secondary">筛选</button></div>
+        <div class="course-scope-row"><small id="course-scope-summary" class="muted"></small><button class="text-button" data-select-courses>选择课程</button></div>
+        <div id="filters" class="filter-panel hidden"><label>平台<select id="platform-filter"><option value="all">所有平台</option><option value="mooc">中国大学 MOOC</option><option value="chaoxing">学习通</option></select></label><label>课程<select id="course-filter"><option value="all">所有课程</option></select></label><label>类型<select id="kind-filter"><option value="all">全部类型</option><option value="homework">作业</option><option value="quiz">测验</option><option value="exam">考试</option></select></label></div>
+        <div class="chips" id="status-chips"><button data-filter="pending" class="active">待办</button><button data-filter="all">全部</button><button data-filter="done">已完成</button></div>
+        <div class="list-heading"><strong id="list-title">按截止时间排列</strong><small id="list-count" class="muted"></small></div>
+        <div id="assignment-list"></div>
+      </section>
+      <section id="calendar-page" class="page hidden">
+        <div class="heading"><div><p class="eyebrow">每个截止，都看得见</p><h1>截止日历</h1></div></div>
+        <div class="calendar-heading"><button id="prev-month" class="icon-button" aria-label="上个月">‹</button><strong id="month-title"></strong><button id="next-month" class="icon-button" aria-label="下个月">›</button></div>
+        <div class="weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div id="calendar-grid"></div>
+        <div class="list-heading"><strong id="selected-day-title"></strong><button id="calendar-today" class="text-button">回到今天</button></div><div id="day-list"></div>
+        <div id="calendar-unknown" class="notice hidden"></div>
+      </section>
+      <section id="settings-page" class="page hidden">
+        <div class="heading"><div><p class="eyebrow">手机采集 · 本地保存 · 无需服务器</p><h1>连接与提醒</h1></div></div>
+        <h2>课程平台</h2><div id="connections"></div>
+        <h2>显示哪些课程的作业和考试</h2><p class="help">只勾选需要做的课程。取消勾选会隐藏其作业和考试、日历和统计，并停止提醒；重新勾选可恢复。</p><div id="course-settings" class="settings-card"></div>
+        <h2>提醒设置</h2>
+        <div class="settings-card"><label>提前提醒（小时）<input id="offsets" type="text" inputmode="decimal" placeholder="72,24,3"><small>例如 72,24,3：提前 3 天、1 天和 3 小时</small></label>
+          <label>自动检测间隔<select id="sync-minutes"><option value="30">约 30 分钟</option><option value="60">约 1 小时</option><option value="180">约 3 小时</option></select></label>
+          <div class="two-fields"><label>免打扰开始<input id="quiet-start" type="time"></label><label>免打扰结束<input id="quiet-end" type="time"></label></div>
+          <label class="switch-row">3 小时内截止可打破免打扰<input id="urgent-override" type="checkbox"></label>
+          <button id="save-settings" class="primary">保存设置</button></div>
+        <h2>让提醒正常到达</h2><div class="settings-card"><div id="notification-state" class="setting-status"></div><button id="notification-permission" class="secondary">开启 App 通知</button><button id="test-notification" class="secondary">发送一条测试通知</button><button id="battery-settings" class="secondary">查看后台与省电设置</button><p class="help">系统省电、断网或强行停止 App 可能延迟检测。已采集的截止提醒会保存在手机；打开 App 后会补做同步。请定期查看各平台的同步结果。</p></div>
+        <div class="privacy-note">平台会话保存在这台手机，不上传服务器。首次连接由你在平台官方页面完成登录。<br><a href="licenses.html">开源组件与参考许可</a></div>
+      </section>
+    </main>
+    <nav><button data-page="tasks" class="active"><span>▤</span>待办</button><button data-page="calendar"><span>▦</span>日历</button><button data-page="settings"><span>⚙</span>设置</button></nav>
+  </div>
+  <div id="toast" role="status"></div>
+  <dialog id="detail-dialog"><div id="detail-content"></div><button id="close-detail" class="secondary">关闭</button></dialog>
+  <dialog id="course-dialog"><h2 id="course-dialog-title">选择要显示的课程</h2><p class="help">只勾选需要做的课程。取消勾选后，其作业和考试将隐藏并停止提醒，之后可以重新勾选。</p><div id="course-dialog-list"></div><button id="close-courses" class="primary">完成</button></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

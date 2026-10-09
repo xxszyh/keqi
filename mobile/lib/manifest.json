@@ -1,0 +1,12 @@
+[
+  {
+    "file": "jsoup.jar",
+    "artifact": "org.jsoup:jsoup:1.18.3",
+    "sha256": "5be1ccd3228ae5fd6eed1bd6d827bac2bc65b91c20e9957d16ea65f739f15302"
+  },
+  {
+    "file": "json-tests-only.jar",
+    "artifact": "org.json:json:20240303",
+    "sha256": "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed"
+  }
+]
