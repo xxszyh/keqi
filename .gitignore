@@ -8,6 +8,16 @@ screenshots/
 mobile/build/
 mobile/debug/
 mobile/tools.local.json
+mobile/build-info.json
+mobile/*-repository.xml
+mobile/huawei.xml
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.log
+.env.*
+!.env.example
 *.keystore
 *.apk.idsig
 # Installers are published as GitHub Release assets.

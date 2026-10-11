@@ -8,11 +8,18 @@ import tempfile
 import sys
 import hashlib
 import xml.etree.ElementTree as ET
+import argparse
+import os
 
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
 ROOT = Path(__file__).resolve().parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output-dir', type=Path, help='APK / build-info output directory; defaults to mobile/')
+args = parser.parse_args()
+OUTPUT = args.output_dir.resolve() if args.output_dir else ROOT
+OUTPUT.mkdir(parents=True, exist_ok=True)
 TOOLS = json.loads((ROOT / 'tools.local.json').read_text(encoding='utf-8'))
 for lib in json.loads((ROOT / 'lib/manifest.json').read_text(encoding='utf-8')):
     if hashlib.sha256((ROOT/'lib'/lib['file']).read_bytes()).hexdigest()!=lib['sha256']:
@@ -61,14 +68,24 @@ with zipfile.ZipFile(BUILD/'resources.apk') as source, zipfile.ZipFile(BUILD/'un
     for dex in (BUILD/'dex').glob('*.dex'):
         dest.write(dex, dex.name, compress_type=zipfile.ZIP_STORED)
 run([BT/'zipalign.exe', '-f', '4', BUILD/'unsigned.apk', BUILD/'aligned.apk'])
-key = Path(TOOLS['java']).parent.parent / 'keqi-debug.keystore'
+custom_key = os.environ.get('KEQI_KEYSTORE')
+legacy_key = Path(TOOLS['java']).parent.parent / 'keqi-debug.keystore'
+key = Path(custom_key).resolve() if custom_key else legacy_key if legacy_key.exists() else WORK / 'keys/keqi-debug.keystore'
+alias = os.environ.get('KEQI_KEY_ALIAS', 'keqi') if custom_key else 'keqi-debug'
+if custom_key and (not key.is_file() or not os.environ.get('KEQI_KEYSTORE_PASSWORD')):
+    raise SystemExit('Custom signing requires an existing KEQI_KEYSTORE and KEQI_KEYSTORE_PASSWORD.')
+if not str(key).isascii():
+    raise SystemExit('Use an ASCII-only signing-key path.')
 if not key.exists():
+    key.parent.mkdir(parents=True, exist_ok=True)
     run([TOOLS['keytool'], '-genkeypair', '-keystore', key, '-storepass', 'android',
          '-keypass', 'android', '-alias', 'keqi-debug', '-keyalg', 'RSA', '-keysize', '2048',
          '-validity', '3650', '-dname', 'CN=Keqi Personal Build'])
 output = BUILD/'keqi.apk'
 run([TOOLS['java'], '-jar', BT/'lib/apksigner.jar', 'sign', '--ks', key,
-     '--ks-key-alias', 'keqi-debug', '--ks-pass', 'pass:android', '--out', output, BUILD/'aligned.apk'])
+     '--ks-key-alias', alias, '--ks-pass', 'env:KEQI_KEYSTORE_PASSWORD' if custom_key else 'pass:android',
+     '--key-pass', 'env:KEQI_KEY_PASSWORD' if custom_key and os.environ.get('KEQI_KEY_PASSWORD') else 'env:KEQI_KEYSTORE_PASSWORD' if custom_key else 'pass:android',
+     '--out', output, BUILD/'aligned.apk'])
 run([TOOLS['java'], '-jar', BT/'lib/apksigner.jar', 'verify', '--verbose', output])
 run([BT/'zipalign.exe', '-c', '4', output])
 with zipfile.ZipFile(output) as apk:
@@ -82,8 +99,8 @@ metadata = subprocess.run([str(BT/'aapt2.exe'), 'dump', 'badging', str(output)],
 assert "minSdkVersion:'26'" in metadata or "sdkVersion:'26'" in metadata
 assert "targetSdkVersion:'35'" in metadata and "name='com.keqi.reminder.MainActivity'" in metadata
 assert 'android.permission.POST_NOTIFICATIONS' in metadata and 'android.permission.RECEIVE_BOOT_COMPLETED' in metadata
-shutil.copy2(output, ROOT/'课期-安卓.apk')
-output = ROOT/'课期-安卓.apk'
+shutil.copy2(output, OUTPUT/'课期-安卓.apk')
+output = OUTPUT/'课期-安卓.apk'
 version=ET.parse(ROOT/'AndroidManifest.xml').getroot().attrib['{http://schemas.android.com/apk/res/android}versionName']
 report = {'version':version, 'min_sdk':26, 'target_sdk':35, 'package':'com.keqi.reminder',
           'apk':output.name, 'bytes':output.stat().st_size,
@@ -100,5 +117,5 @@ for folder in ('src','res','assets'):
             source_hashes[relative]=digest
 source_hashes['AndroidManifest.xml']=hashlib.sha256((STAGE/'AndroidManifest.xml').read_bytes()).hexdigest()
 report['source_sha256']=source_hashes
-(ROOT/'build-info.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+(OUTPUT/'build-info.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
 print('APK ready:', output, 'bytes:', output.stat().st_size, flush=True)

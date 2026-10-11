@@ -1,83 +1,68 @@
-# 课期：MOOC / 学习通安卓作业与考试提醒
+# 课期 · Keqi
 
-免费个人版 0.10.0。直接在安卓手机上读取课程，保存作业和考试并发送 App 本地通知。电脑关机不影响手机运行，不需要租服务器、填写推送密钥或付费订阅。
+在安卓手机上集中查看中国大学 MOOC 与学习通的作业、测验和考试，并接收本地截止提醒。
 
-安装包：[下载 0.10.0 APK](https://github.com/xxszyh/keqi/releases/download/v0.10.0/keqi-android-v0.10.0.apk) · [查看版本发布](https://github.com/xxszyh/keqi/releases/tag/v0.10.0)。安装包作为 Release 附件保存；Git 仓库包含源码、依赖许可、测试和验证记录。
+无需自建服务器或付费推送，电脑关机后手机仍可运行。任务与设置保存在本机，登录由平台官方页面完成。
 
+[下载安装包](https://github.com/xxszyh/keqi/releases/latest) · [使用说明](docs/USAGE.md) · [编译源码](docs/BUILDING.md) · [参与贡献](CONTRIBUTING.md) · [更新记录](CHANGELOG.md)
 
-0.10.0 重做课程选择与筛选底部面板。课程管理按平台收起，支持草稿保存/取消、撤销，以及持久的「移出课期」和重新导入；移出后同步保持排除。日期任务组可收起，设置首页缩成六个入口，提醒用天/小时选项及自定义时间。[本版更新说明](mobile/0.10.0更新说明.md)。
+## 界面
 
-0.8.0 加入学习通考试读取：分别读取课程考试卡片和考试安排表，根据平台提供的课程、班级和考试身份归入已连接课程，沿用课程勾选设置。考试进入待办、截止日历和本地提醒；顶部「考试」可以单独查看。无法唯一关联课程的记录归入可勾选的「其他考试（未关联课程）」，缺少稳定考试编号会提示未纳入提醒。同步只访问列表，不进入开始考试或作答页面。
+以下为明确标注的示例数据，不是用户真实课程。
 
-已修正可复现的官方课程跳转页面识别问题。同步结果分别显示本轮读取的作业、考试数量以及本轮未更新的旧记录；作业列表更新而详情失败时，会明确说明并保留旧截止日期。上次尝试和上次完整同步分开显示。真实手机上的全部考试覆盖和仍异常的页面需要核对，截图不能确定所有页面失败原因。
+| 待办列表 | 课程筛选 | 设置 |
+| --- | --- | --- |
+| ![日期分组待办](mobile/preview/列表版-示例.png) | ![搜索课程](mobile/preview/课程筛选-新版.png) | ![设置入口](mobile/preview/设置首页-新版.png) |
 
-## 安装和首次使用
+## 功能
 
-1. 把 `mobile/课期-安卓.apk` 传到手机，用文件管理器打开并安装。需要安卓 8.0 或以上，以及能正常更新的 Android System WebView。安装器如要求授权，允许当前文件管理器安装此安装包即可。该包为个人签名测试版本，未上架应用商店。
-2. 打开「课期」→「设置」→「通知与后台」→「开启 App 通知」，允许通知，再点「发送一条测试通知」。确认手机通知栏能看到测试消息。
-3. 在「课程平台」分别连接学习通和中国大学 MOOC。密码、验证码和扫码操作由你在平台官方页面完成，课期不读取或保存输入的密码。
-4. MOOC 登录后点顶部「完成连接」，不再要求课程卡片必须带有学习链接。学习通登录后进入「我学的课」，点「完成连接」，程序会刷新官方课程页，用当前登录会话验证并读取课程；完成后返回课期开始同步作业和考试。页面空白时点「重开登录页」；重复进入异常时可点「重置登录」，只清理学习通会话，保留课期课程和作业；也可切换「电脑登录」。返回后可以点右上角 ↻ 手动同步。遇到网页待验证时，点学习通卡片的「打开验证页面」，按平台提示完成后返回并刷新，不必先断开连接。
-5. 连接后，到「设置 → 课程管理」管理课程；平台详情也有独立管理入口。待办顶部课程按钮用于筛选单门课程，面板底部可以管理两个平台。勾选后统一保存，取消勾选的课程隐藏任务且不提醒，但仍在管理列表；「移出」则从普通课程列表排除并在后续同步保持排除，可撤销或在设置重新导入。按平台批量操作只改变该平台。核对课程总数并抽查截止与提交状态；分页/文件夹未识别或读取失败显示「部分同步」，保留已读课程和旧任务。
-6. 学习通部分页面只有月日、没有年份。这类作业先显示「截止待确认」。如全部已连接课程属于同一学期，可点「确认日期年份」填写作答开始年份，随后程序重新同步；跨年作答区间会把结束日期放到下一年。如课程跨多个学期，保留年份为空，在作业详情里逐项补充完整截止日期。
-7. 在手机系统的应用设置中允许课期自启动、后台运行和通知，并把课期的电池策略设为允许后台活动或不限制。不同品牌菜单名称不同；App 的「查看后台与省电设置」会打开系统应用详情。
+- 学习通与中国大学 MOOC/SPOC 独立登录和同步，读取可识别的作业、测验、考试及互评。
+- 日期分组待办、搜索、课程/平台/类型/状态筛选，以及截止日历。
+- 课程按平台收起，可批量选择、持久移出、撤销和重新导入；选课同时作用于列表、日历、统计和提醒。
+- 默认提前 3 天、1 天、3 小时提醒，支持自定义、免打扰、本地已处理、补充日期与稍后提醒。
+- 区分本轮读取与旧缓存，详情失败时保留旧截止并标明；支持深色模式。
 
-更换平台账号前先断开该平台连接。断开会删除本机该平台的作业、课程配置和会话备份，停止其提醒；另一个平台继续工作。卸载 App 会删除本地数据。
+当前安装版本为 **0.10.0**。下载 [官方 APK](https://github.com/xxszyh/keqi/releases/download/v0.10.0/keqi-android-v0.10.0.apk)，安卓 8.0 及以上可安装。同签名更新可直接覆盖，卸载会删除本机数据。
 
-## 已实现
+首次使用：在「设置 → 通知与后台」开启通知，在「设置 → 课程平台」完成官方登录并连接，在「课程管理」保留需要的课程。更多操作见 [使用说明](docs/USAGE.md)。
 
-- 两个平台独立连接与同步；默认纳入全部已发现课程，可选择哪些课程显示作业和考试并提醒。
-- 作业与考试列表、类型、平台和课程筛选、搜索、截止日历；显示逾期和截止待确认的记录。
-- 默认提前 72、24、3 小时提醒，可修改。新发现或延迟恢复的作业只补当前最紧迫的一档提醒。
-- 提交与互评分别保存；已提交停止提交催交，互评只有明确完成证据才取消提醒。
-- 截止变更重新安排提醒；平台完成状态不明确时保留「待确认」，通知提示核实。
-- 人工「已处理」、稍后提醒、补充截止日期分别保存，不会修改平台提交状态。
-- SQLite 保存任务与提醒状态；系统后台作业按约 30 分钟检测，重启后恢复后台任务和提醒安排。
-- 夜间免打扰，以及可选的 3 小时内紧急提醒；同步结果提示、上次尝试与上次完整同步时间。
+## 开发
 
-## 后台行为和当前验证范围
-
-后台检测由 Android JobScheduler 调度，截止提醒由系统非精确 AlarmManager 调度。手机需要开机并有网络，才能发现新作业和时间变更；已缓存截止日期可在离线时提醒。省电、设备休眠、系统清理、通知权限关闭或用户强行停止会延迟或停止执行，不能保证每 30 分钟准时检测或每个阈值准时通知。强行停止后请重新打开课期。普通关闭界面与强行停止不同。
-
-0.10.0 通过 APK 编译、同签名升级校验与包结构检查。56 项领域、107 项连接/课程、7 项浏览器认证、27 项受保护续读策略、25 项考试解析/映射/部分同步、17 项动态网页续读、19 项考试界面、19 项基本界面和 11 项课程名称检查通过。课程隐藏、平台独立选择、日期列表、主题和新增课程移出/恢复流程通过，包括 55 门课程及 320/390/780 像素布局。网页样例是隔离测试数据，验证详情见 [验证记录](mobile/验证记录.md)。**本次 UI、Android SQLite 持久化端到端流程、iQOO Neo10 Pro+ / OriginOS 6 上的真实考试数量、锁屏通知及后台持续运行尚未实机验证。**同步仍明确区分本轮读取和旧任务缓存。
-
-当前读取学习通官方课程考试卡片及考试安排表中可识别的已发布考试、课程作业列表，以及中国大学 MOOC / SPOC 课程数据中的作业、测验、考试和互评节点。平台列表不显示的考试、单独考试系统、班群公告、学校定制入口不保证覆盖。只提供开始时间时不会当作截止时间；只有月日时继续等待年份确认；未读到日期会保留之前的截止或允许人工补充。平台加载、权限或字段变化导致部分失败时保留历史记录并说明未完成的读取阶段。
-
-## 本地数据
-
-不设自建服务器和第三方推送通道。作业、设置和提醒记录在 App 私有 SQLite 数据库中。登录浏览器由 Android WebView 保存会话 Cookie；另有 Android Keystore AES-GCM 加密的会话备份。并非所有 WebView 浏览数据都由这个加密备份管理。系统备份已关闭。
-
-网络请求仅用于访问你连接的平台；平台登录页面自身可能加载其登录服务或统计资源。课程页面不暴露课期的原生接口，原生界面只载入 APK 自带的静态页面。学习通及 MOOC 适配代码参考的许可见 [THIRD_PARTY.md](THIRD_PARTY.md)。
-
-## 开发与重新编译（Windows x64）
-
-安装包的日常使用不需要电脑开发环境。源码重新编译需要 Python 3.10+，工具引导脚本会把 Microsoft OpenJDK 17、Android Platform 35 和 Build Tools 35 放入用户缓存，不改变系统 PATH。
-
-在本目录 PowerShell 执行：
+当前提供 Windows x64 的便携构建流程，使用 Java 8 语法、JDK 17、Android SDK 35、Python 3.10+。界面是 APK 内置 HTML/CSS/JS，浏览器预览带示例标识；不需要前端打包工具。
 
 ```powershell
+git clone https://github.com/xxszyh/keqi.git
+cd keqi
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:KEQI_TOOL_CACHE = 'C:\KeqiTools'
 .\.venv\Scripts\python.exe mobile\bootstrap_tools.py
-.\.venv\Scripts\python.exe mobile\test.py
-.\.venv\Scripts\python.exe mobile\connection_test.py
-.\.venv\Scripts\python.exe mobile\chaoxing_connection_test.py
-.\.venv\Scripts\python.exe mobile\ui_test.py
-.\.venv\Scripts\python.exe mobile\exam_ui_test.py
-.\.venv\Scripts\python.exe mobile\list_ui_test.py
-.\.venv\Scripts\python.exe mobile\course_management_ui_test.py
-.\.venv\Scripts\python.exe mobile\course_visibility_test.py
-.\.venv\Scripts\python.exe mobile\chaoxing_course_selection_test.py
-.\.venv\Scripts\python.exe mobile\course_name_test.py
-.\.venv\Scripts\python.exe mobile\chaoxing_read_test.py
-.\.venv\Scripts\python.exe mobile\chaoxing_202_browser_test.py
+.\.venv\Scripts\python.exe scripts\check_repo.py
+.\.venv\Scripts\python.exe mobile\run_checks.py --domain-only
 .\.venv\Scripts\python.exe mobile\build.py
-.\.venv\Scripts\python.exe mobile\package_release.py
 ```
 
-界面检查默认使用已安装的 Microsoft Edge；手机 WebView 的真实行为仍需手机验证。`mobile/tools.local.json` 保存本机工具路径，不纳入版本管理。工具路径须为 ASCII；可用环境变量 `KEQI_TOOL_CACHE` 指定工具缓存位置。原生构建在工具缓存内暂存，支持项目路径包含中文。
+产物为 `mobile/课期-安卓.apk`。已有 Android SDK 可使用 `configure_tools.py`，详见 [编译说明](docs/BUILDING.md)。自行构建及 CI 使用开发者自己的调试签名，不能直接覆盖官方 APK。
 
-`mobile/public_login_check.py` 可选地读取公开登录页及匿名课程响应，不填写账号、不发送验证码。其匿名响应存入忽略的 `mobile/build/public-login-check` 后，连接检查会额外验证这些页面不会被误认为登录成功。离线的连接和课程检查为 103 项，本次加上 4 项真实匿名响应检查，共 107 项。`mobile/login_navigation_probe.py` 调用实际 Java 跳转策略，检查公开登录入口和学校回跳。`chaoxing_connection_test.py` 使用生产 DOM 提取脚本及 `Authentication.fromBrowser`，验证旧链接、新链接、隐藏字段、封面旁名称和重复链接补齐等课程格式、课程标题、匿名拒绝、登录页拒绝和密码字段值剔除；它使用测试页面，不包含真实账号登录。
+| 文档 | 内容 |
+| --- | --- |
+| [架构](docs/ARCHITECTURE.md) | 项目目录、同步/数据/提醒模块与关键边界 |
+| [测试](docs/TESTING.md) | JVM 与 Edge 检查、自动构建、实机验证范围 |
+| [贡献指南](CONTRIBUTING.md) | 匿名复现、代码约定和 PR 流程 |
+| [发布流程](docs/RELEASING.md) | 版本、私有签名、安装包和校验 |
+| [安全报告](SECURITY.md) | 私密漏洞报告与敏感数据处理 |
+| [整理检查记录](docs/OPEN_SOURCE_AUDIT.md) | 历史扫描、依赖、干净副本与自动检查结果 |
 
-运行时依赖 jsoup 1.18.3；`json-tests-only.jar` 仅供 JVM 检查，APK 使用 Android 自带的 `org.json`，没有打包这个测试库。APK 内没有依赖特定 CPU 架构的原生库。便携构建使用缓存中的个人测试签名，保持同一签名可覆盖升级；丢失签名后须卸载重装。请勿将这种测试签名当作公开发行的正式签名。
+## 数据与适用范围
 
-`mobile/assets/index.html` 可直接在浏览器打开预览，只显示明确标注的示例作业。App 内运行同一界面，通过原生接口读取真实本机数据。源码、验证结果和截图均保存在 `mobile` 中。
+项目是独立的社区工具，与学习通、超星、中国大学 MOOC 或学校没有隶属关系。只读取用户已连接账号可访问的任务，不自动作答、提交、开始考试或处理验证码。平台网页字段和内部 RPC 变化可能导致读取不完整；学校单独考试系统、班群公告和列表外任务不保证覆盖。
+
+任务、设置和提醒保存在 Android 私有 SQLite；WebView 保存官方会话 Cookie，另有 Keystore AES-GCM 会话备份，系统备份关闭。平台登录页面自身可能请求平台服务。课期不设自建账号服务器。
+
+后台由 Android JobScheduler / 非精确 AlarmManager 调度，省电、断网、休眠、通知关闭或强行停止可能延迟/停止提醒。**不能保证每个截止都被读取或准时提醒**；请对照官方平台核对重要任务。真实手机验证范围和已知不足见 [验证记录](mobile/验证记录.md)。
+
+## 许可与来源
+
+项目采用 [MIT 许可证](LICENSE)。jsoup 及参考项目的声明见 [THIRD_PARTY.md](THIRD_PARTY.md)，完整许可随源码和后续 APK 分发。工具链由开发者自行下载，遵循各自条款。
+
+欢迎通过 [Issues](https://github.com/xxszyh/keqi/issues) 报告问题和建议，或提交 PR。公开反馈请先脱敏；漏洞使用 [安全报告](SECURITY.md) 的私密渠道。
