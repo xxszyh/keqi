@@ -17,6 +17,7 @@ sys.stderr.reconfigure(encoding='utf-8')
 ROOT = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output-dir', type=Path, help='APK / build-info output directory; defaults to mobile/')
+parser.add_argument('--debug', action='store_true', help='Enable app-only debugging for connected-device diagnostics')
 args = parser.parse_args()
 OUTPUT = args.output_dir.resolve() if args.output_dir else ROOT
 OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -35,6 +36,10 @@ for name in ('src', 'res', 'assets', 'lib'):
     shutil.copytree(ROOT / name, STAGE / name)
 shutil.copytree(ROOT.parent / 'shared/core-java', STAGE / 'shared')
 shutil.copy2(ROOT / 'AndroidManifest.xml', STAGE / 'AndroidManifest.xml')
+if args.debug:
+    manifest_tree = ET.parse(STAGE / 'AndroidManifest.xml')
+    manifest_tree.getroot().find('application').set('{http://schemas.android.com/apk/res/android}debuggable', 'true')
+    manifest_tree.write(STAGE / 'AndroidManifest.xml', encoding='utf-8', xml_declaration=True)
 BUILD = STAGE / 'build'
 for directory in ('classes', 'generated', 'dex'):
     (BUILD / directory).mkdir(parents=True, exist_ok=True)
@@ -104,6 +109,7 @@ shutil.copy2(output, OUTPUT/'课期-安卓.apk')
 output = OUTPUT/'课期-安卓.apk'
 version=ET.parse(ROOT/'AndroidManifest.xml').getroot().attrib['{http://schemas.android.com/apk/res/android}versionName']
 report = {'version':version, 'min_sdk':26, 'target_sdk':35, 'package':'com.keqi.reminder',
+          'debug':args.debug,
           'apk':output.name, 'bytes':output.stat().st_size,
           'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),
           'checks':['APK signature verification', 'ZIP alignment', 'DEX / manifest / bundled license assets / Chinese app label', 'No native ABI library or test JAR bundled', 'aapt2 SDK / launcher / permission metadata']}

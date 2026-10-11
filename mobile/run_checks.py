@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent
-DOMAIN = ['test.py', 'connection_test.py', 'chaoxing_read_test.py']
+DOMAIN = ['test.py', 'connection_test.py', 'chaoxing_read_test.py', 'migration_test.py']
 BROWSER = ['ui_test.py', 'exam_ui_test.py', 'list_ui_test.py', 'course_management_ui_test.py',
            'course_visibility_test.py', 'chaoxing_course_selection_test.py', 'course_name_test.py',
            'chaoxing_connection_test.py', 'chaoxing_202_browser_test.py']

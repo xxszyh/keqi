@@ -17,6 +17,17 @@ import java.util.concurrent.*;
 public final class MainActivity extends Activity {
     private WebView web;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
+    private final ExecutorService reminderWorker=Executors.newSingleThreadExecutor();
+    private final java.util.concurrent.atomic.AtomicBoolean reminderRunning=new java.util.concurrent.atomic.AtomicBoolean();
+    private final java.util.concurrent.atomic.AtomicBoolean reminderDirty=new java.util.concurrent.atomic.AtomicBoolean();
+    private void rebuildNotifications(){
+        if(reminderWorker.isShutdown())return;reminderDirty.set(true);
+        if(!reminderRunning.compareAndSet(false,true))return;
+        reminderWorker.execute(()->{
+            try{do{reminderDirty.set(false);try{Notifications.rebuild(getApplicationContext());}catch(Exception e){message("本机提醒更新失败，请重新打开 App");}}while(reminderDirty.get()&&!reminderWorker.isShutdown());}
+            finally{reminderRunning.set(false);if(reminderDirty.get()&&!reminderWorker.isShutdown())rebuildNotifications();}
+        });
+    }
     private final ExecutorService collector=Executors.newSingleThreadExecutor();
     private final ExecutorService lanWorker=Executors.newSingleThreadExecutor();
     private final Handler lanTimer=new Handler(Looper.getMainLooper());
@@ -28,6 +39,7 @@ public final class MainActivity extends Activity {
     private final java.util.concurrent.atomic.AtomicBoolean syncRequested=new java.util.concurrent.atomic.AtomicBoolean(false);
     protected void onCreate(Bundle saved){
         super.onCreate(saved);
+        if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)WebView.setWebContentsDebuggingEnabled(true);
         Notifications.create(this);web=new WebView(this);try(Store store=new Store(this)){applyAppearance(store.settings().optBoolean("darkMode",false));}web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(false);web.getSettings().setAllowFileAccess(true);web.getSettings().setAllowContentAccess(false);
         web.getSettings().setAllowFileAccessFromFileURLs(false);web.getSettings().setAllowUniversalAccessFromFileURLs(false);
         web.addJavascriptInterface(new Bridge(),"Native");
@@ -46,11 +58,11 @@ public final class MainActivity extends Activity {
             public void onPageFinished(WebView v,String url){refresh();}
         });FrameLayout host=new FrameLayout(this);host.addView(web,new FrameLayout.LayoutParams(-1,-1));
         host.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
-        setContentView(host);web.loadUrl("file:///android_asset/index.html");SyncJob.schedule(this);worker.execute(()->{Notifications.rebuild(getApplicationContext());});
+        setContentView(host);web.loadUrl("file:///android_asset/index.html");SyncJob.schedule(this);rebuildNotifications();
     }
     protected void onPause(){lanTimer.removeCallbacks(pollLan);super.onPause();}
-    protected void onResume(){super.onResume();lanTimer.removeCallbacks(pollLan);lanTimer.post(pollLan);refresh();worker.execute(()->{Notifications.rebuild(getApplicationContext());try(Store store=new Store(this)){boolean needed=false;for(String p:new String[]{"mooc","chaoxing"}){JSONObject c=store.meta("connection."+p);if(c.optBoolean("connected")&&System.currentTimeMillis()-c.optLong("lastAttempt",0)>store.settings().optInt("syncMinutes",30)*60000L)needed=true;}if(needed)startSync();}});}
-    protected void onDestroy(){if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}lanTimer.removeCallbacks(pollLan);lanWorker.shutdownNow();worker.shutdown();collector.shutdown();super.onDestroy();}
+    protected void onResume(){super.onResume();lanTimer.removeCallbacks(pollLan);lanTimer.post(pollLan);refresh();rebuildNotifications();worker.execute(()->{try(Store store=new Store(this)){boolean needed=false;for(String p:new String[]{"mooc","chaoxing"}){JSONObject c=store.meta("connection."+p);if(c.optBoolean("connected")&&System.currentTimeMillis()-c.optLong("lastAttempt",0)>store.settings().optInt("syncMinutes",30)*60000L)needed=true;}if(needed)startSync();}});}
+    protected void onDestroy(){if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}lanTimer.removeCallbacks(pollLan);lanWorker.shutdownNow();worker.shutdown();reminderWorker.shutdown();collector.shutdown();super.onDestroy();}
     private void startSync(){
         if(collector.isShutdown()||!syncRequested.compareAndSet(false,true))return;
         collector.execute(()->{try{SyncEngine.sync(getApplicationContext(),this::refresh);message("本轮检测已完成，请查看平台同步状态");}finally{syncRequested.set(false);refresh();}});
@@ -82,7 +94,7 @@ public final class MainActivity extends Activity {
                     switch(action){
                         case "getState":break;
                         case "createTask":case "deleteTask":case "restoreTask":case "addSubtask":case "updateSubtask":case "reorderSubtasks":case "materializeRange":case "changeSeries":case "batchTasks":case "resolveConflict":
-                            Collaboration.command(store,action,data);Notifications.rebuild(MainActivity.this);message("任务已保存");break;
+                            Collaboration.command(store,action,data);rebuildNotifications();message("任务已保存");break;
                         case "unlinkComputer":LanClient.unlink(getApplicationContext());message("已解除电脑关联，本机任务仍保留");break;
                         case "updateLanAddress":
                             JSONObject lan=store.meta("lan.connection");if(!lan.has("fingerprint"))throw new IllegalArgumentException("请先配对电脑");lan.put("address",data.getString("address")).put("port",data.getInt("port"));store.putMeta("lan.connection",lan);break;
@@ -98,22 +110,22 @@ public final class MainActivity extends Activity {
                                 if((k.equals("quietStart")||k.equals("quietEnd"))&&!data.getString(k).matches("(?:[01]\\d|2[0-3]):[0-5]\\d|"))throw new IllegalArgumentException("免打扰时间格式不正确");
                                 if(k.equals("chaoxingYear")&&!data.isNull(k)&&(data.getInt(k)<2000||data.getInt(k)>2100))throw new IllegalArgumentException("年份不正确");
                                 settings.put(k,data.get(k));
-                            }store.putMeta("settings",settings);if(data.length()!=1||!data.has("darkMode")){SyncJob.schedule(MainActivity.this);Notifications.rebuild(MainActivity.this);}message("设置已保存" );
+                            }store.putMeta("settings",settings);if(data.length()!=1||!data.has("darkMode")){SyncJob.schedule(MainActivity.this);rebuildNotifications();}message("设置已保存" );
                             if(data.has("chaoxingYear")&&store.meta("connection.chaoxing").optBoolean("connected")){message("年份已保存，正在重新读取截止时间");startSync();}break;
                         case "updateTask":
-                            Collaboration.command(store,"updateTask",data);Notifications.rebuild(MainActivity.this);message("已更新本机记录");break;
+                            Collaboration.command(store,"updateTask",data);rebuildNotifications();message("已更新本机记录");break;
                         case "toggleCourse":
-                            store.enableCourse(data.getString("key"),data.getBoolean("enabled"));Notifications.rebuild(MainActivity.this);break;
+                            store.enableCourse(data.getString("key"),data.getBoolean("enabled"));rebuildNotifications();break;
                         case "toggleCourses":
                             JSONArray courseKeys=data.getJSONArray("keys");Set<String> selected=new HashSet<>();for(int i=0;i<courseKeys.length();i++)selected.add(courseKeys.getString(i));
-                            store.enableCourses(selected,data.getBoolean("enabled"));Notifications.rebuild(MainActivity.this);break;
+                            store.enableCourses(selected,data.getBoolean("enabled"));rebuildNotifications();break;
                         case "applyCourseChoices":{
                             Set<String> remove=new HashSet<>(),restore=new HashSet<>();JSONArray removing=data.optJSONArray("remove"),restoring=data.optJSONArray("restore");
                             if(removing!=null)for(int i=0;i<removing.length();i++)remove.add(removing.getString(i));if(restoring!=null)for(int i=0;i<restoring.length();i++)restore.add(restoring.getString(i));
-                            Collaboration.command(store,"applyCourseChoices",data);Notifications.rebuild(MainActivity.this);message("课程设置已保存");break;
+                            Collaboration.command(store,"applyCourseChoices",data);rebuildNotifications();message("课程设置已保存");break;
                         }
                         case "disconnect":
-                            String platform=data.getString("platform");if(!Arrays.asList("mooc","chaoxing").contains(platform))throw new IllegalArgumentException("不支持的平台");store.disconnect(platform);Sessions.clear(MainActivity.this,platform);Notifications.rebuild(MainActivity.this);message("此设备已断开平台登录，任务仍保留");break;
+                            String platform=data.getString("platform");if(!Arrays.asList("mooc","chaoxing").contains(platform))throw new IllegalArgumentException("不支持的平台");store.disconnect(platform);Sessions.clear(MainActivity.this,platform);rebuildNotifications();message("此设备已断开平台登录，任务仍保留");break;
                         case "openSource":
                             JSONObject source=store.task(data.getString("id"));if(source==null)return;String url=source.getString("sourceUrl");if(!Http.trusted(url,source.getString("platform")))throw new IllegalArgumentException("来源链接无效");runOnUiThread(()->startActivity(new Intent(MainActivity.this,LoginActivity.class).putExtra("platform",source.optString("platform")).putExtra("sourceUrl",url)));break;
                         case "verifyPlatform":
@@ -128,5 +140,5 @@ public final class MainActivity extends Activity {
             });
         }
     }
-    public void onRequestPermissionsResult(int request,String[] permissions,int[] grants){super.onRequestPermissionsResult(request,permissions,grants);refresh();worker.execute(()->Notifications.rebuild(MainActivity.this));}
+    public void onRequestPermissionsResult(int request,String[] permissions,int[] grants){super.onRequestPermissionsResult(request,permissions,grants);refresh();rebuildNotifications();}
 }

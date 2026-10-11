@@ -14,6 +14,7 @@ version=manifest['{http://schemas.android.com/apk/res/android}versionName']
 version_code=int(manifest['{http://schemas.android.com/apk/res/android}versionCode'])
 tools=json.loads((root/'tools.local.json').read_text(encoding='utf-8'))
 info=json.loads((build_dir/'build-info.json').read_text(encoding='utf-8'))
+assert not info.get('debug',False), 'Do not distribute a connected-device diagnostic build'
 apk=build_dir/'课期-安卓.apk'
 digest=hashlib.sha256(apk.read_bytes()).hexdigest()
 assert info['version']==version and info['sha256']==digest
@@ -48,6 +49,7 @@ with tempfile.TemporaryDirectory(prefix='release-check-',dir=work) as tmp:
         same_signer=True
     run([bt/'zipalign.exe','-c','-p','4',current])
     metadata=run([bt/'aapt2.exe','dump','badging',current])
+    assert 'application-debuggable' not in metadata, 'Diagnostic APK must not be packaged as a release'
     assert ("versionCode='"+str(version_code)+"'") in metadata and ("versionName='"+version+"'") in metadata
     assert ("sdkVersion:'26'" in metadata or "minSdkVersion:'26'" in metadata) and "targetSdkVersion:'35'" in metadata
 versioned=build_dir/('课期-安卓-v'+version+'.apk')

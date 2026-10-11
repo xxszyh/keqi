@@ -28,9 +28,10 @@ public final class Notifications {
         try(Store store=new Store(c)){
             JSONArray pending=store.pendingNotices();for(int i=0;i<pending.length();i++){String key=pending.getJSONObject(i).getString("key");c.getSystemService(AlarmManager.class).cancel(alarmIntent(c,key));store.noticeState(key,"cancelled");}
             JSONObject settings=store.settings();JSONArray offsets=settings.getJSONArray("offsets");double[] hours=new double[offsets.length()];for(int i=0;i<hours.length;i++)hours[i]=offsets.getDouble(i);
-            long now=System.currentTimeMillis();JSONArray tasks=store.tasks();
+            long now=System.currentTimeMillis();JSONArray tasks=store.tasks();Map<String,Boolean> courses=store.courseEnablement();
             for(int i=0;i<tasks.length();i++){
-                JSONObject t=tasks.getJSONObject(i);long due=due(t);if(!actionable(store,t)||due<=now)continue;
+                JSONObject t=tasks.getJSONObject(i);long due=due(t);
+                if(due<=now||t.optBoolean("reminderSuppressed")||t.optString("status").equals("done")||t.optBoolean("localDone")||Boolean.FALSE.equals(courses.get(t.optString("courseKey"))))continue;
                 int version=t.optInt("version",1);String id=t.optString("noticeId",t.getString("id"));double urgent=Core.mostUrgent(due,now,hours);
                 for(double offset:hours){long at=due-(long)(offset*3600000);if(at<=now&&Double.compare(offset,urgent)!=0)continue;
                     String kind="remind:"+offset;String key=Core.hash(id+":"+version+":"+kind);

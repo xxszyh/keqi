@@ -98,6 +98,17 @@ public final class Store extends SQLiteOpenHelper {
         }finally{db.endTransaction();}
     }
     public boolean enabled(String courseKey){try{courseKey=scopedCourseKey(courseKey);}catch(JSONException e){throw new IllegalStateException(e);}JSONArray cs=courses();for(int i=0;i<cs.length();i++){JSONObject c=cs.optJSONObject(i);if(c!=null&&c.optString("key").equals(courseKey))return !c.optBoolean("removed",false)&&c.optBoolean("enabled",true);}return true;}
+    /** Bulk reminder reads use one catalog, including aliases of this device's legacy tasks. */
+    public Map<String,Boolean> courseEnablement(){
+        Map<String,Boolean> result=new HashMap<>();Map<String,String> accounts=new HashMap<>();
+        for(String platform:new String[]{"mooc","chaoxing"})accounts.put(platform,meta("connection."+platform).optString("sourceAccount"));
+        JSONArray catalog=courses();for(int i=0;i<catalog.length();i++){
+            JSONObject course=catalog.optJSONObject(i);if(course==null)continue;
+            boolean enabled=!course.optBoolean("removed")&&course.optBoolean("enabled",true);
+            result.put(course.optString("key"),enabled);
+            if(course.has("sourceKey")&&course.optString("sourceAccount").equals(accounts.get(course.optString("platform"))))result.put(course.optString("sourceKey"),enabled);
+        }return result;
+    }
     public synchronized void notice(String key,String taskId,int version,String kind,long due,String state){ContentValues v=new ContentValues();v.put("key",key);v.put("task_id",taskId);v.put("version",version);v.put("kind",kind);v.put("due",due);v.put("state",state);getWritableDatabase().insertWithOnConflict("notices",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
     public String noticeState(String key){try(Cursor c=getReadableDatabase().rawQuery("SELECT state FROM notices WHERE key=?",new String[]{key})){return c.moveToFirst()?c.getString(0):"";}}
     public synchronized void noticeState(String key,String state){ContentValues v=new ContentValues();v.put("state",state);getWritableDatabase().update("notices",v,"key=?",new String[]{key});}
