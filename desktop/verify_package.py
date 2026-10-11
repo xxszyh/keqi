@@ -15,11 +15,11 @@ for relative,expected in record['compiled_sha256'].items():
 assert (packaged/'resources/runtime/bin/java.exe').is_file()
 assert (packaged/'resources/runtime/bin/keytool.exe').is_file()
 assert list((packaged/'resources/runtime/legal').rglob('LICENSE'))
-asar=ROOT/'node_modules/@electron/asar'
+asar=ROOT/'node_modules/@electron/asar/lib/asar.js'
 js="""const a=require(process.argv[1]),fs=require('node:fs'),p=require('node:path');
 const archive=process.argv[2],repo=process.argv[3],files=JSON.parse(process.argv[4]);
-for(const name of files){const original=fs.readFileSync(p.join(repo,name)),packed=a.extractFile(archive,name.startsWith('desktop/')?name.slice(8):'build/ui/'+name.slice(14));if(!packed.equals(original))throw Error('Packaged source differs: '+name);}
-const paths=a.listPackage(archive);if(paths.some(p=>p.startsWith('/build/tests/')||p.startsWith('/tests/')))throw Error('Test files included');
+for(const name of files){const original=fs.readFileSync(p.join(repo,name)),packed=a.extractFile(archive,p.normalize(name.startsWith('desktop/')?name.slice(8):'build/ui/'+name.slice(14)));if(!packed.equals(original))throw Error('Packaged source differs: '+name);}
+const paths=a.listPackage(archive).map(name=>name.split(p.sep).join('/'));if(paths.some(p=>p.startsWith('/build/tests/')||p.startsWith('/tests/')))throw Error('Test files included');
 """
 files=[p for p in record['source_sha256'] if p.startswith('desktop/host/') or p.startswith('mobile/assets/')]
 # licenses.html receives the desktop notices during build.

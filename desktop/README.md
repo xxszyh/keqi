@@ -12,6 +12,7 @@ npm ci
 npm start
 cd ..
 python desktop/package.py
+python desktop/verify_package.py
 ```
 
 依赖锁定在 `package-lock.json` 和 `lib/manifest.json`。JVM 依赖从 Maven Central 按固定 SHA-256 下载；JRE 由 jlink 生成，保留其法律声明。如果 npm 的脚本策略阻止 Electron 下载或 electron-winstaller 的架构选择，请检查对应安装脚本后允许该包；不要全局关闭脚本审查。
@@ -29,6 +30,8 @@ npm test
 
 UI 检查使用 Node 版 Playwright。可以安装开发者自己的 Playwright，或用 `KEQI_PLAYWRIGHT` 指向 Python Playwright 的 `driver/package` 目录。测试隔离到临时数据目录，隐藏主窗口，使用明确标记的匿名任务；不会访问真实账号。
 
+可以设置 `KEQI_PACKAGED_EXE` 为最终打包目录的 `Keqi.exe` 路径，再运行 `node --test tests/ui.test.js`，验证附带的 JVM、依赖和界面，而不是开发运行时。共享检查同样支持 `JAVA_HOME`，无需 Android SDK。
+
 桌面共享内容在用户数据目录的 SQLite `meta.workspace` 内保存为版本化 JSON。每次命令整体校验并事务提交；来源观察、逐字段因果版本、回执和实体修订在同一事务。首版没有压缩历史或分页拉取，适合个人规模，不能把它当作多人服务部署。
 
-安装和配对见 [使用说明](../docs/DESKTOP_USAGE.md)，方案和实现差异见 [架构](../docs/DESKTOP_ARCHITECTURE.md)。
+安装和配对见 [使用说明](../docs/DESKTOP_USAGE.md)，方案和实现差异见 [架构](../docs/DESKTOP_ARCHITECTURE.md)，成品与复审结果见 [验证记录](../docs/DESKTOP_VERIFICATION.md)。

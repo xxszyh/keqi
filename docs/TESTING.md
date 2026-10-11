@@ -45,3 +45,7 @@ git push
 授权命令需要管理员本人在 GitHub 确认。工作流启用后每次 PR 或 main 推送运行；当前已验证的是本机干净副本的同一组命令，未声称 GitHub hosted runner 已通过。
 
 这些检查没有 Android SQLite、AlarmManager、JobScheduler、锁屏通知和手机 WebView 的端到端环境。发布前需实机核对覆盖安装、登录、作业/考试范围、课程移出与恢复、返回键、通知权限及后台行为。
+
+## 电脑与手机联动
+
+0.11.0 增加 `shared/test.py` 的共享规则、真实 HTTPS/SQLite 与复审回归，以及 `desktop/tests/` 的实际 Electron 界面和 JVM 恢复检查。桌面编译和测试入口见 [桌面工程](../desktop/README.md)，本机结果与实机边界见 [0.11.0 验证记录](DESKTOP_VERIFICATION.md)。
