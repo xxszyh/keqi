@@ -10,7 +10,8 @@ test('desktop commands persist through the isolated UI and JVM', {timeout:90000}
   const data=await fs.mkdtemp(path.join(os.tmpdir(),'keqi-ui-'));
   const errors=[];
   async function launch(){
-    const app=await _electron.launch({executablePath:require('electron'),args:[path.resolve(__dirname,'..')],env:{...process.env,KEQI_TEST:'1',KEQI_DATA_DIR:data}});
+    const packaged=process.env.KEQI_PACKAGED_EXE;
+    const app=await _electron.launch({executablePath:packaged||require('electron'),args:packaged?[]:[path.resolve(__dirname,'..')],env:{...process.env,KEQI_TEST:'1',KEQI_DATA_DIR:data}});
     const page=await app.firstWindow();
     page.on('pageerror',e=>errors.push(e.message));
     await page.waitForFunction(()=>typeof state!=='undefined'&&!!state.workspace);
@@ -36,6 +37,13 @@ test('desktop commands persist through the isolated UI and JVM', {timeout:90000}
     await page.evaluate(id=>showDetail(id),task.id);
     await page.locator('[data-step]').check();
     await page.waitForFunction(id=>state.tasks.find(t=>t.id===id).subtasks[0].done,task.id);
+    await page.evaluate(id=>{
+      const t=state.tasks.find(t=>t.id===id),step=t.subtasks[0];
+      step.conflicts=[{field:'title',candidates:[{value:'电脑步骤'},{value:'手机步骤'}]}];
+      showDetail(id);document.querySelector('[data-step-resolve][data-version="1"]').click();
+    },task.id);
+    await page.waitForFunction(id=>state.tasks.find(t=>t.id===id).subtasks[0].title==='手机步骤',task.id);
+    await page.evaluate(id=>showDetail(id),task.id);
     const shell=await page.locator('.shell').boundingBox();
     assert.ok(shell.x>=200&&shell.width>700,'desktop uses the available width');
     await page.screenshot({path:path.resolve(__dirname,'../build/desktop-ui.png'),fullPage:true});

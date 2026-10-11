@@ -27,7 +27,10 @@
           "^/jvm",
           "^/tests",
           "^/build.py",
-          "^/package-lock.json"
+          "^/package-lock.json",
+          "^/build/tests",
+          "^/build/desktop-ui.png",
+          "^/package.py"
         ],
         "icon": "assets/icon",
         "executableName": "Keqi"

@@ -7,8 +7,16 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--runtime',action='store_true')
+parser.add_argument('--jdk',type=Path,help='JDK 17 directory; JAVA_HOME or the mobile toolchain also works')
 args=parser.parse_args()
-tools=json.loads((REPO/'mobile/tools.local.json').read_text(encoding='utf-8'))
+configured=REPO/'mobile/tools.local.json'
+jdk=args.jdk or (Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else None)
+if jdk:
+    tools={name:str(jdk/'bin'/(name+'.exe')) for name in ['java','javac','keytool']}
+elif configured.exists(): tools=json.loads(configured.read_text(encoding='utf-8'))
+else: raise SystemExit('Set JAVA_HOME to a JDK 17 directory or pass --jdk.')
+for name in ['java','javac','keytool']:
+    if not Path(tools[name]).is_file(): raise SystemExit('JDK tool missing: '+name)
 for dependency in json.loads((ROOT/'lib/manifest.json').read_text(encoding='utf-8')):
     path=ROOT/'lib'/dependency['file']
     if not path.exists():

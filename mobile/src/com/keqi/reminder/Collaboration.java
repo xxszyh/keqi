@@ -21,7 +21,7 @@ public final class Collaboration {
             JSONObject local=new JSONObject();JSONArray raw=store.rawTasks();
             for(String platform:new String[]{"mooc","chaoxing"}){JSONObject connection=store.meta("connection."+platform);String account=connection.optString("sourceAccount");if(account.isEmpty())continue;JSONArray courses=connection.optJSONArray("courses");if(courses==null)courses=new JSONArray();JSONArray tasks=new JSONArray();for(int i=0;i<raw.length();i++)if(raw.getJSONObject(i).optString("platform").equals(platform))tasks.put(raw.getJSONObject(i));workspace.observe(platform,account,courses,tasks,true,false);
                 for(int i=0;i<courses.length();i++){JSONObject c=courses.getJSONObject(i);workspace.edit(workspace.canonical(c.getString("key")),"course",new JSONObject().put("enabled",c.optBoolean("enabled",true)).put("removed",c.optBoolean("removed",false)),false);}
-                for(int i=0;i<tasks.length();i++){JSONObject task=tasks.getJSONObject(i);String canonical=workspace.canonical(task.getString("id"));if(workspace.get(canonical)==null)continue;JSONObject edits=new JSONObject();for(String k:new String[]{"localDone","manualDue","snoozeUntil"})if(task.has(k))edits.put(k,task.get(k));if(edits.length()>0)workspace.edit(canonical,"platform",edits,false);local.put(canonical,new JSONObject().put("noticeId",task.getString("id")).put("version",task.optInt("version",1)).put("due",task.isNull("manualDue")?task.opt("due"):task.opt("manualDue")).put("status",task.optString("status")));}
+                for(int i=0;i<tasks.length();i++){JSONObject task=tasks.getJSONObject(i);String canonical=workspace.canonical(task.getString("id"));if(workspace.get(canonical)==null)continue;JSONObject edits=new JSONObject();for(String k:new String[]{"localDone","manualDue","snoozeUntil"})if(task.has(k))edits.put(k,task.get(k));if(edits.length()>0)workspace.edit(canonical,"platform",edits,false);local.put(canonical,LocalNotices.fromLegacy(task));}
             }
             store.putMeta("collaborationLocal",local);store.putMeta("collaboration",workspace.save());
         }return workspace;
@@ -31,9 +31,7 @@ public final class Collaboration {
     }
     private static JSONArray tasksWithin(Store store) throws JSONException {
         Workspace w=load(store);JSONArray tasks=new TaskService(w,false).tasks(false),raw=store.rawTasks();Set<String> known=new HashSet<>();JSONObject local=store.meta("collaborationLocal");
-        for(int i=0;i<tasks.length();i++){JSONObject t=tasks.getJSONObject(i);String id=t.getString("id");known.add(id);JSONObject previous=local.optJSONObject(id);if(previous==null)previous=new JSONObject().put("noticeId",id).put("version",1);Object due=t.opt("manualDue");if(due==null||due==JSONObject.NULL)due=t.opt("due");
-            if(previous.has("due")&&(!Objects.equals(String.valueOf(due),String.valueOf(previous.opt("due")))||!previous.optString("status").equals(t.optString("status"))))previous.put("version",previous.optInt("version",1)+1);
-            previous.put("due",due==null?JSONObject.NULL:due).put("status",t.optString("status"));local.put(id,previous);t.put("version",previous.optInt("version",1)).put("noticeId",previous.getString("noticeId"));
+        for(int i=0;i<tasks.length();i++){JSONObject t=tasks.getJSONObject(i);String id=t.getString("id");known.add(id);JSONObject previous=local.optJSONObject(id);if(previous==null)previous=new JSONObject();LocalNotices.annotate(t,previous);local.put(id,previous);
         }
         for(int i=0;i<raw.length();i++){JSONObject t=raw.getJSONObject(i);if(!known.contains(w.canonical(t.getString("id")))&&w.get(t.getString("id"))==null)tasks.put(t);}
         store.putMeta("collaborationLocal",local);return tasks;
