@@ -20,15 +20,16 @@ public final class Secrets {
         }
         return (javax.crypto.SecretKey)ks.getKey("keqi.sessions",null);
     }
-    public void put(String name,String value) throws Exception {
+    public String protect(String value) throws Exception {
         Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,key());
-        String encoded=Base64.encodeToString(c.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(c.doFinal(value.getBytes("UTF-8")),Base64.NO_WRAP);
-        context.getSharedPreferences("session_vault",0).edit().putString(name,encoded).commit();
+        return Base64.encodeToString(c.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(c.doFinal(value.getBytes("UTF-8")),Base64.NO_WRAP);
     }
-    public String get(String name) throws Exception {
-        String value=context.getSharedPreferences("session_vault",0).getString(name,"");if(value.isEmpty())return "";
+    public String unprotect(String value) throws Exception {
+        if(value.isEmpty())return "";
         String[] parts=value.split(":",2);Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));
         return new String(c.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),"UTF-8");
     }
+    public void put(String name,String value) throws Exception {context.getSharedPreferences("session_vault",0).edit().putString(name,protect(value)).commit();}
+    public String get(String name) throws Exception {return unprotect(context.getSharedPreferences("session_vault",0).getString(name,""));}
     public void remove(String name){context.getSharedPreferences("session_vault",0).edit().remove(name).commit();}
 }

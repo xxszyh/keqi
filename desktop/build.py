@@ -33,6 +33,10 @@ libs=list((ROOT/'lib').glob('*.jar'))+[REPO/'mobile/lib/jsoup.jar']
 classpath=os.pathsep.join(map(str,libs))
 subprocess.run([tools['javac'],'-encoding','UTF-8','--release','17','-cp',classpath,'-d',str(out/'classes'),*map(str,sources)],check=True)
 for library in libs: shutil.copy2(library,out/library.name)
+inputs=sources+list((ROOT/'host').glob('*.js'))+[ROOT/'package.json']+list((REPO/'mobile/assets').rglob('*'))
+record={'source_sha256':{p.relative_to(REPO).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs if p.is_file()},
+        'compiled_sha256':{p.relative_to(out).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in out.rglob('*') if p.is_file() and p.suffix in ['.class','.jar']}}
+(out/'build-info.json').write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
 if args.runtime:
     runtime=ROOT/'runtime'
     if not runtime.exists():
