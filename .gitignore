@@ -27,3 +27,9 @@ mobile/huawei.xml
 *.p12
 *.pfx
 .codex-remote-attachments/
+node_modules/
+desktop/build/
+desktop/dist/
+desktop/runtime/
+desktop/lib/*.jar
+*.exe

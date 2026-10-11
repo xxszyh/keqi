@@ -33,6 +33,7 @@ if not str(WORK).isascii():
 STAGE = Path(tempfile.mkdtemp(prefix='keqi-', dir=WORK))
 for name in ('src', 'res', 'assets', 'lib'):
     shutil.copytree(ROOT / name, STAGE / name)
+shutil.copytree(ROOT.parent / 'shared/core-java', STAGE / 'shared')
 shutil.copy2(ROOT / 'AndroidManifest.xml', STAGE / 'AndroidManifest.xml')
 BUILD = STAGE / 'build'
 for directory in ('classes', 'generated', 'dex'):
@@ -52,16 +53,16 @@ run([BT/'aapt2.exe', 'compile', '--dir', STAGE/'res', '-o', BUILD/'resources.zip
 run([BT/'aapt2.exe', 'link', '-o', BUILD/'resources.apk', '--manifest', STAGE/'AndroidManifest.xml',
      '-I', TOOLS['android_jar'], '--min-sdk-version', '26', '--target-sdk-version', '35',
      '-A', STAGE/'assets', '--java', BUILD/'generated', BUILD/'resources.zip'])
-sources = list((STAGE/'src').rglob('*.java')) + list((BUILD/'generated').rglob('*.java'))
+sources = list((STAGE/'shared').rglob('*.java')) + list((STAGE/'src').rglob('*.java')) + list((BUILD/'generated').rglob('*.java'))
 run([TOOLS['javac'], '-J-Dfile.encoding=UTF-8', '-encoding', 'UTF-8', '--release', '8',
-     '-cp', str(TOOLS['android_jar'])+';'+str(STAGE/'lib/jsoup.jar'),
+     '-cp', str(TOOLS['android_jar'])+';'+str(STAGE/'lib/jsoup.jar')+';'+str(STAGE/'lib/zxing-core.jar'),
      '-d', BUILD/'classes', *sources])
 with zipfile.ZipFile(BUILD/'classes.jar', 'w') as zf:
     for path in (BUILD/'classes').rglob('*.class'):
         zf.write(path, path.relative_to(BUILD/'classes').as_posix())
 run([TOOLS['java'], '-cp', BT/'lib/d8.jar', 'com.android.tools.r8.D8',
      '--lib', TOOLS['android_jar'], '--min-api', '26', '--output', BUILD/'dex',
-     BUILD/'classes.jar', STAGE/'lib/jsoup.jar'])
+     BUILD/'classes.jar', STAGE/'lib/jsoup.jar', STAGE/'lib/zxing-core.jar'])
 with zipfile.ZipFile(BUILD/'resources.apk') as source, zipfile.ZipFile(BUILD/'unsigned.apk', 'w') as dest:
     for info in source.infolist():
         dest.writestr(info, source.read(info.filename))
@@ -115,6 +116,11 @@ for folder in ('src','res','assets'):
             if digest!=hashlib.sha256((ROOT/relative).read_bytes()).hexdigest():
                 raise SystemExit('Source changed during build: '+relative)
             source_hashes[relative]=digest
+for file in (STAGE/'shared').rglob('*.java'):
+    relative='../shared/core-java/'+file.relative_to(STAGE/'shared').as_posix()
+    digest=hashlib.sha256(file.read_bytes()).hexdigest()
+    if digest!=hashlib.sha256((ROOT/relative).read_bytes()).hexdigest(): raise SystemExit('Shared source changed during build: '+relative)
+    source_hashes[relative]=digest
 source_hashes['AndroidManifest.xml']=hashlib.sha256((STAGE/'AndroidManifest.xml').read_bytes()).hexdigest()
 report['source_sha256']=source_hashes
 (OUTPUT/'build-info.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')

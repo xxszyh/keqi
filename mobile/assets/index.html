@@ -1,9 +1,11 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff"><title>课期 · 作业与考试提醒</title>
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="collaboration.css">
 </head>
 <body>
   <div class="shell">
@@ -14,7 +16,7 @@
         <div id="kind-tabs" class="type-tabs" aria-label="任务类型"><button data-kind="all" class="active" aria-pressed="true">全部</button><button data-kind="homework" aria-pressed="false">作业</button><button data-kind="quiz" aria-pressed="false">测验</button><button data-kind="exam" aria-pressed="false">考试</button></div>
         <div class="scope-toolbar"><button class="text-button" id="course-picker-button"><span id="course-scope-summary">全部保留课程</span><svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button><button id="filter-button" class="text-button"><span id="filter-label">待办 · 筛选</span><svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></svg></button></div>
         <div id="search-toolbar" class="toolbar hidden"><input id="search" type="search" placeholder="搜索任务或课程" aria-label="搜索作业、考试或课程"></div>
-        <div class="hidden" aria-hidden="true"><select id="platform-filter"><option value="all">所有平台</option><option value="mooc">中国大学 MOOC</option><option value="chaoxing">学习通</option></select><select id="course-filter"><option value="all">所有课程</option></select><select id="kind-filter"><option value="all">全部</option><option value="homework">作业</option><option value="quiz">测验</option><option value="exam">考试</option></select></div>
+        <div class="hidden" aria-hidden="true"><select id="platform-filter"><option value="all">所有平台</option><option value="mooc">中国大学 MOOC</option><option value="chaoxing">学习通</option><option value="manual">个人待办</option></select><select id="course-filter"><option value="all">所有课程</option></select><select id="kind-filter"><option value="all">全部</option><option value="homework">作业</option><option value="quiz">测验</option><option value="exam">考试</option></select></div>
         <div id="active-filter-summary" class="hidden"></div>
         <div class="overview"><span id="today"></span><span>保留课程中：今天截止 <b id="count-today">0</b> 项 · 待办 <b id="count-pending">0</b> 项</span></div>
         <button id="health-banner" class="sync-summary hidden" aria-label="查看同步问题详情"></button>
@@ -45,7 +47,7 @@
           <label class="switch-row">3 小时内截止可打破免打扰<input id="urgent-override" class="switch-control" role="switch" type="checkbox"></label><button id="save-settings" class="primary full-width">保存提醒设置</button></div></section>
         <section id="settings-notifications" class="settings-section hidden"><div class="settings-card"><div id="notification-state" class="setting-status"></div><button id="notification-permission" class="primary full-width">开启 App 通知</button><button id="test-notification" class="secondary full-width">发送测试通知</button><button id="battery-settings" class="secondary full-width">后台与省电设置</button><p class="help">允许自启动、后台运行和通知，有助于提醒到达。</p><details class="help"><summary>了解后台检测</summary><p>系统省电、断网或强行停止 App 可能延迟检测。已采集的截止提醒保存在手机，重新打开后会补做同步。</p></details></div></section>
         <section id="settings-appearance" class="settings-section hidden"><div class="settings-card"><label class="switch-row">深色模式<input id="dark-mode" class="switch-control" role="switch" type="checkbox"></label></div></section>
-        <section id="settings-about" class="settings-section hidden"><div class="settings-card"><h2>课期 0.10.0</h2><p class="help">课程、平台会话和提醒设置保存在这台手机，不上传自建服务器。登录在平台官方页面完成。</p><a href="licenses.html">开源组件与参考许可</a></div></section>
+        <section id="settings-about" class="settings-section hidden"><div class="settings-card"><h2>课期 0.11.0</h2><p class="help">任务与设置保存在本机；配对后，通过局域网与自己的电脑交换任务和人工修改。平台登录会话只留在当前设备。</p><a href="licenses.html">开源组件与参考许可</a></div></section>
       </section>
     </main>
     <nav aria-label="页面"><button data-page="tasks" class="active"><svg viewBox="0 0 24 24"><path d="m4 6 2 2 3-4m3 2h8M4 13h4m4 0h8M4 20h4m4 0h8"/></svg>待办</button><button data-page="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 4h1m6 0h1m-8 4h1"/></svg>日历</button><button data-page="settings"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="var(--paper)"/><circle cx="16" cy="12" r="2" fill="var(--paper)"/><circle cx="10" cy="18" r="2" fill="var(--paper)"/></svg>设置</button></nav>
@@ -59,5 +61,6 @@
   <dialog id="reimport-dialog" class="bottom-sheet"><div class="sheet-top"><h2>重新导入课程</h2><button class="icon-button" id="close-reimport" aria-label="关闭重新导入">×</button></div><input id="reimport-search" type="search" placeholder="搜索已移出课程" aria-label="搜索已移出课程"><div id="reimport-list" class="sheet-list"></div></dialog>
   <dialog id="sync-dialog"><h2>同步详情</h2><p id="sync-label"></p><div id="sync-details"></div><button id="close-sync" class="secondary">关闭</button></dialog>
   <script src="app.js"></script>
+  <script src="collaboration.js"></script>
 </body>
 </html>

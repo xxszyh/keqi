@@ -11,3 +11,4 @@
 *.png binary
 *.apk binary
 *.zip binary
+desktop/assets/licenses/*.txt -whitespace

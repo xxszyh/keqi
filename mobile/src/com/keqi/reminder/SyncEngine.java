@@ -37,7 +37,7 @@ public final class SyncEngine {
             }
             CookieManager.getInstance().flush();
             Notifications.rebuild(context);
-        }finally{BUSY.set(false);stateChanged.run();}
+        }finally{LanClient.sync(context);BUSY.set(false);stateChanged.run();}
     }
     static String safeError(Exception e){String m=e.getMessage();if(m==null)return "同步失败，请稍后重试";if(m.matches("(?s).*https?://.*"))return "平台连接失败，请检查网络或重新登录";return m.length()>160?m.substring(0,160):m;}
     private static String url(String root,JSONObject params) throws Exception {StringBuilder b=new StringBuilder(root).append('?');Iterator<String> keys=params.keys();while(keys.hasNext()){String k=keys.next();b.append(Http.enc(k)).append('=').append(Http.enc(params.get(k).toString())).append('&');}return b.toString();}

@@ -1,0 +1,58 @@
+{
+  "name": "keqi-desktop",
+  "productName": "课期",
+  "version": "0.11.0",
+  "description": "课程任务与个人待办，局域网手机同步",
+  "main": "host/main.js",
+  "author": "Keqi contributors",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "test": "node --test tests/*.test.js"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": true,
+        "extraResource": [
+          "build/core",
+          "runtime"
+        ],
+        "ignore": [
+          "^/runtime",
+          "^/build/core",
+          "^/lib",
+          "^/jvm",
+          "^/tests",
+          "^/build.py",
+          "^/package-lock.json"
+        ],
+        "icon": "assets/icon",
+        "executableName": "Keqi"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "Keqi",
+            "authors": "Keqi contributors",
+            "description": "课期任务管理与局域网同步",
+            "setupIcon": "assets/icon.ico"
+          }
+        }
+      ],
+      "outDir": "dist"
+    }
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "1.0.1",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "8.0.1",
+    "@electron-forge/maker-squirrel": "8.0.1",
+    "electron": "44.7.0"
+  }
+}

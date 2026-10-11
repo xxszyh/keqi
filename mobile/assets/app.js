@@ -1,8 +1,8 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const labels = {mooc:'中国大学 MOOC',chaoxing:'学习通'};
+const labels = {mooc:'中国大学 MOOC',chaoxing:'学习通',manual:'个人待办'};
 const phases = {submit:'提交',peerreview:'互评',exam:'考试'};
-const kinds = {homework:'作业',quiz:'测验',exam:'考试'};
+const kinds = {homework:'作业',quiz:'测验',exam:'考试',todo:'待办'};
 let state = {tasks:[],connections:[],courses:[],settings:{offsets:[72,24,3],syncMinutes:30,quietStart:'23:00',quietEnd:'07:00',urgentOverride:false},notificationEnabled:false};
 let selectedFilter = 'pending';
 let month = new Date(); month.setDate(1);
@@ -25,8 +25,8 @@ function done(t){return t.status==='done'||t.localDone;}
 function due(t){return t.manualDue ?? t.due ?? null;}
 function muted(t){return (state.removedCourses||[]).some(c=>c.key===t.courseKey)||state.courses.find(c=>c.key===t.courseKey)?.enabled===false;}
 function activeTasks(){return state.tasks.filter(t=>!muted(t));}
-function classify(t){const at=due(t);if(done(t))return 'done';if(!at)return 'unknown';if(at<Date.now())return 'overdue';if(at-Date.now()<=86400000)return 'urgent';return 'pending';}
-function remaining(t){const at=due(t);if(done(t))return t.localDone?'本地已处理':'平台已完成';if(!at)return '截止待确认';const hours=(at-Date.now())/3600000;if(hours<0)return '已逾期';if(hours<1)return `${Math.max(1,Math.ceil(hours*60))} 分钟内`;if(hours<24)return `${Math.ceil(hours)} 小时内`;return `${Math.ceil(hours/24)} 天后`;}
+function classify(t){const at=due(t);if(done(t))return 'done';if(!at)return t.platform==='manual'?'undated':'unknown';if(at<Date.now())return 'overdue';if(at-Date.now()<=86400000)return 'urgent';return 'pending';}
+function remaining(t){const at=due(t);if(done(t))return t.localDone?'本地已处理':'平台已完成';if(!at)return t.platform==='manual'?'未设置截止':'截止待确认';const hours=(at-Date.now())/3600000;if(hours<0)return '已逾期';if(hours<1)return `${Math.max(1,Math.ceil(hours*60))} 分钟内`;if(hours<24)return `${Math.ceil(hours)} 小时内`;return `${Math.ceil(hours/24)} 天后`;}
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),1800);}
 function call(action,data={}){if(window.Native){Native.action(action,JSON.stringify(data));}else{previewAction(action,data);}}
 window.onNativeState = payload => {state=typeof payload==='string'?JSON.parse(payload):payload;render();verifyCourseChange();};
@@ -59,15 +59,15 @@ function render(){
   $('course-scope-summary').textContent=$('course-filter').value==='all'?'全部保留课程':courseName(state.courses.find(c=>c.key===$('course-filter').value)||{});
   renderList();renderCalendar();renderConnections();
 }
-function deadlineText(t){const at=due(t);if(!at)return '日期待确认';const today=dateKey(new Date());const key=dateKey(new Date(at));const time=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(at));return key===today?'今天 '+time+' 截止':fmt(at)+' 截止';}
+function deadlineText(t){const at=due(t);if(!at)return t.platform==='manual'?'未设置截止':'日期待确认';const today=dateKey(new Date());const key=dateKey(new Date(at));const time=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(at));return key===today?'今天 '+time+' 截止':fmt(at)+' 截止';}
 function card(t){const category=classify(t);const old=t.manualDue==null&&t.deadlineObserved===false&&due(t);const notes=[done(t)?remaining(t):'',t.status==='unknown'&&!t.localDone?'完成状态待确认':'',old?'截止沿用旧记录 '+(t.deadlineCheckedAt?fmt(t.deadlineCheckedAt):''):(!due(t)&&t.rawDeadline?t.rawDeadline:'')].filter(Boolean);return `<article class="assignment-card ${done(t)?'is-done':''}" data-task="${esc(t.id)}" tabindex="0" role="button" aria-label="查看 ${esc(t.title)}"><button class="local-check" data-local-task="${esc(t.id)}" aria-label="${t.localDone?'取消':'标记'} ${esc(t.title)} 的人工处理状态"><span class="circle">${done(t)?tickIcon:''}</span></button><h3>${esc(t.title)}</h3><p class="course-name">${esc(taskCourseName(t))}</p><div class="card-bottom"><span><span class="platform">${labels[t.platform]||esc(t.platform)}</span><span class="kind">${t.phase==='peerreview'?'作业互评':kinds[t.kind]||'作业'}</span></span><time class="${category}">${esc(deadlineText(t))}</time></div>${notes.length?'<div class="row-state '+(old?'stale':'')+'">'+notes.map(esc).join(' · ')+'</div>':''}</article>`;}
 function groupedCards(tasks){
   const today=dateKey(new Date()),tomorrow=dateKey(new Date(Date.now()+86400000)),week=dateKey(new Date(Date.now()+7*86400000));const groups=new Map();
-  for(const t of tasks){const at=due(t),key=at?dateKey(new Date(at)):null;const group=!at?'日期待确认':!done(t)&&at<Date.now()?'已逾期':key<today?'之前记录':key===today?'今天 · '+new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric'}).format(new Date()):key===tomorrow?'明天':key<=week?'7 天内':'之后';if(!groups.has(group))groups.set(group,[]);groups.get(group).push(t);}
+  for(const t of tasks){const at=due(t),key=at?dateKey(new Date(at)):null;const group=!at?(t.platform==='manual'?'无截止日期':'日期待确认'):!done(t)&&at<Date.now()?'已逾期':key<today?'之前记录':key===today?'今天 · '+new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric'}).format(new Date()):key===tomorrow?'明天':key<=week?'7 天内':'之后';if(!groups.has(group))groups.set(group,[]);groups.get(group).push(t);}
   return [...groups].map(([title,items])=>{const open=$('search').value.trim()||timeFilter==='unknown'?true:groupExpansion.has(title)?groupExpansion.get(title):expandDefaults(title);return '<section><button class="group-heading" data-group="'+esc(title)+'" aria-expanded="'+open+'"><strong>'+esc(title)+'</strong><small>'+items.length+' 项 <span aria-hidden="true">'+(open?'⌃':'⌄')+'</span></small></button><div class="group-body '+(open?'':'hidden')+'">'+items.map(card).join('')+'</div></section>';}).join('')+'<div class="list-end">共 '+tasks.length+' 项</div>';
 }
 function filteredTasks(){const search=$('search').value.trim().toLowerCase(),pf=$('platform-filter').value,cf=$('course-filter').value,kf=$('kind-filter').value;
-  return activeTasks().filter(t=>(pf==='all'||t.platform===pf)&&(cf==='all'||t.courseKey===cf)&&(kf==='all'||t.kind===kf)&&(!search||`${t.title} ${taskCourseName(t)}`.toLowerCase().includes(search))).filter(t=>selectedFilter==='all'||selectedFilter==='done'&&done(t)||selectedFilter==='pending'&&!done(t)).filter(t=>timeFilter==='all'||timeFilter==='week'&&!done(t)&&due(t)>=Date.now()&&due(t)-Date.now()<=604800000||classify(t)===timeFilter).sort((a,b)=>(due(a)??Infinity)-(due(b)??Infinity));
+  return activeTasks().filter(t=>(pf==='all'||t.platform===pf)&&(cf==='all'||t.courseKey===cf)&&(kf==='all'||t.kind===kf)&&(!search||`${t.title} ${taskCourseName(t)} ${t.note||''} ${(t.tags||[]).join(' ')}`.toLowerCase().includes(search))).filter(t=>selectedFilter==='all'||selectedFilter==='done'&&done(t)||selectedFilter==='pending'&&!done(t)).filter(t=>timeFilter==='all'||timeFilter==='week'&&!done(t)&&due(t)>=Date.now()&&due(t)-Date.now()<=604800000||classify(t)===timeFilter).sort((a,b)=>(due(a)??Infinity)-(due(b)??Infinity));
 }
 function renderList(){const tasks=filteredTasks(),kf=$('kind-filter').value,cf=$('course-filter').value,pf=$('platform-filter').value;
   $('list-count').textContent=`本次筛选 ${tasks.length} 项`;$('list-title').textContent={pending:'待办',all:'所有记录',done:'已完成'}[selectedFilter];
@@ -78,7 +78,7 @@ function renderList(){const tasks=filteredTasks(),kf=$('kind-filter').value,cf=$
   $('course-scope-summary').textContent=cf==='all'?'全部保留课程':courseName(state.courses.find(c=>c.key===cf)||{});
   const noneSelected=state.courses.length>0&&state.courses.every(c=>c.enabled===false);
   $('assignment-list').innerHTML=tasks.length?groupedCards(tasks):noneSelected?emptyHtml('还没有启用课程','在课程管理中开启需要提醒的课程。'):emptyHtml(state.tasks.length?'当前筛选没有记录':'先连接你的课程平台',state.tasks.length?'调整课程、类型或筛选条件。':'连接学习通和 MOOC，集中查看作业和考试。',!state.tasks.length);
-  $('unknown-tools').classList.toggle('hidden',!tasks.some(t=>!due(t)));
+  $('unknown-tools').classList.toggle('hidden',!tasks.some(t=>t.platform!=='manual'&&!due(t)));
 }
 function emptyHtml(title,description,connect=false){return `<div class="empty"><strong>${esc(title)}</strong><div>${esc(description)}</div>${connect?'<button class="primary" data-go-settings>连接课程平台</button>':''}</div>`;}
 function renderCalendar(){
@@ -90,7 +90,7 @@ function renderCalendar(){
   $('calendar-grid').innerHTML=html;$('selected-day-title').textContent=day.replaceAll('-',' / ');
   const selected=tasks.filter(t=>dateKey(new Date(due(t)))===day);
   $('day-list').innerHTML=selected.length?selected.map(card).join(''):emptyHtml('这一天没有待办截止','可以查看其他日期。');
-  const missing=activeTasks().filter(t=>!done(t)&&!due(t)).length;
+  const missing=activeTasks().filter(t=>t.platform!=='manual'&&!done(t)&&!due(t)).length;
   $('calendar-unknown').classList.toggle('hidden',!missing);$('calendar-unknown').textContent=`还有 ${missing} 项截止时间待确认，仍保留在待办列表中。`;
 }
 function reminderLabel(hours){return hours>=24&&hours%24===0?hours/24+' 天前':hours>=1?hours+' 小时前':Math.round(hours*60)+' 分钟前';}
@@ -133,7 +133,7 @@ function renderPicker(){const query=$('picker-search').value.trim().toLowerCase(
 function openPicker(){$('picker-search').value='';renderPicker();$('picker-dialog').showModal();}
 function renderReimport(){const q=$('reimport-search').value.trim().toLowerCase(),courses=(state.removedCourses||[]).filter(c=>courseName(c).toLowerCase().includes(q));$('reimport-list').innerHTML=courses.length?courses.map(c=>'<div class="reimport-course"><span>'+esc(courseName(c))+'<small>'+esc(labels[c.platform])+'</small></span><button class="secondary" data-reimport="'+esc(c.key)+'">重新导入</button></div>').join(''):'<div class="empty">没有已移出的匹配课程。</div>';}
 function openFilters(){filterDraft={platform:$('platform-filter').value,course:$('course-filter').value,status:selectedFilter,time:timeFilter};renderFilters();$('filter-dialog').showModal();}
-function renderFilters(){$('filter-platforms').innerHTML=[['all','所有平台'],['mooc','中国大学 MOOC'],['chaoxing','学习通']].map(([v,name])=>'<button data-filter-platform="'+v+'" class="'+(filterDraft.platform===v?'active':'')+'">'+name+'</button>').join('');document.querySelectorAll('#status-chips [data-filter]').forEach(b=>{const active=b.dataset.filter===filterDraft.status;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});document.querySelectorAll('[data-time]').forEach(b=>{const active=b.dataset.time===filterDraft.time;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});}
+function renderFilters(){$('filter-platforms').innerHTML=[['all','所有平台'],['mooc','中国大学 MOOC'],['chaoxing','学习通'],['manual','个人待办']].map(([v,name])=>'<button data-filter-platform="'+v+'" class="'+(filterDraft.platform===v?'active':'')+'">'+name+'</button>').join('');document.querySelectorAll('#status-chips [data-filter]').forEach(b=>{const active=b.dataset.filter===filterDraft.status;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});document.querySelectorAll('[data-time]').forEach(b=>{const active=b.dataset.time===filterDraft.time;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});}
 function applyFilters(){$('course-filter').value=filterDraft.course;$('platform-filter').value=filterDraft.platform;selectedFilter=filterDraft.status;timeFilter=filterDraft.time;const selected=state.courses.find(c=>c.key===$('course-filter').value);if(selected&&filterDraft.platform!=='all'&&selected.platform!==filterDraft.platform)$('course-filter').value='all';$('filter-dialog').close();filterDraft=null;renderList();}
 function showSettingsSection(name){settingsSection=name;document.querySelectorAll('.settings-section').forEach(el=>el.classList.toggle('hidden',el.id!=='settings-'+name));$('page-title').textContent={home:'设置',platforms:'课程平台',courses:'课程管理',reminders:'提醒与免打扰',notifications:'通知与后台',appearance:'外观',about:'关于课期'}[name];$('settings-back').classList.toggle('hidden',name==='home');if(name==='reminders'){reminderDraft=[...(state.settings.offsets||[72,24,3])];renderReminders();}window.scrollTo(0,0);}
 function showPage(page){scrollPositions[currentPage]=window.scrollY;currentPage=page;document.querySelectorAll('.page').forEach(el=>el.classList.toggle('hidden',el.id!==page+'-page'));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('page-title').textContent={tasks:'课期',calendar:'日历',settings:'设置'}[page];$('search-button').classList.toggle('hidden',page!=='tasks');$('settings-back').classList.add('hidden');if(page==='settings'){settingsSection='home';showSettingsSection('home');}else window.scrollTo(0,scrollPositions[page]);if(page==='calendar')renderCalendar();}
@@ -159,7 +159,7 @@ document.addEventListener('click',e=>{
   if(b.dataset.group){const open=groupExpansion.has(b.dataset.group)?groupExpansion.get(b.dataset.group):expandDefaults(b.dataset.group);groupExpansion.set(b.dataset.group,!open);renderList();}
   if(b.dataset.offset){const n=Number(b.dataset.offset);if(!reminderDraft)reminderDraft=[...(state.settings.offsets||[72,24,3])];reminderDraft=reminderDraft.includes(n)?reminderDraft.filter(x=>x!==n):[...reminderDraft,n];renderReminders();}
   if(b.dataset.day){day=b.dataset.day;renderCalendar();}if(b.dataset.login)call('login',{platform:b.dataset.login});if(b.dataset.verifyPlatform)call('verifyPlatform',{platform:b.dataset.verifyPlatform});
-  if(b.dataset.disconnect&&confirm('断开后停止采集和提醒，该平台的本机记录会删除。')){call('disconnect',{platform:b.dataset.disconnect});$('platform-dialog').close();}
+  if(b.dataset.disconnect&&confirm('断开此设备的平台登录并停止采集？已保存任务及另一设备的登录不受影响。')){call('disconnect',{platform:b.dataset.disconnect});$('platform-dialog').close();}
   if(b.hasAttribute('data-year')){const year=prompt('设置学习通已连接课程的作答起始年份。跨学期课程请逐项补充日期。',String(state.settings.chaoxingYear||''));if(year!==null){if(year!==''&&!/^(20\d\d)$/.test(year))return toast('请输入四位年份');call('saveSettings',{chaoxingYear:year?Number(year):null});}}
   if(b.id==='clear-active-filters'){$('platform-filter').value='all';$('course-filter').value='all';timeFilter='all';renderList();}
 });

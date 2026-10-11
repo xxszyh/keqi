@@ -42,7 +42,8 @@ with sync_playwright() as p:
     page.locator('[data-remove-course=mooc-math]').click()
     page.once('dialog',lambda d:d.accept());page.locator('#close-courses').click()
     page.locator('nav [data-page=settings]').click()
-    expect(page.locator('#settings-home .settings-entry')).to_have_count(6)
+    expect(page.locator('#settings-home .settings-entry')).to_have_count(7)
+    expect(page.locator('[data-settings-open=link]')).to_be_visible()
     expect(page.locator('#settings-home .course-switch')).to_have_count(0)
     page.locator('[data-settings-open=courses]').click()
     assert page.locator('.course-summary[open]').count()==0

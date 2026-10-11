@@ -1,0 +1,32 @@
+[
+  {
+    "file": "sqlite-jdbc.jar",
+    "artifact": "org.xerial:sqlite-jdbc:3.53.4.0",
+    "sha256": "bcb1f51e36f940867e83342f9efbf5968ac44a6bef4d397bb4af7b17b45cd2fb",
+    "url": "https://repo.maven.apache.org/maven2/org/xerial/sqlite-jdbc/3.53.4.0/sqlite-jdbc-3.53.4.0.jar"
+  },
+  {
+    "file": "jmdns.jar",
+    "artifact": "org.jmdns:jmdns:3.6.4",
+    "sha256": "50eb53d536438c0d1b51ad876dfc143dfd2c8bf08a17245bd0e2bb0bab767c4d",
+    "url": "https://repo.maven.apache.org/maven2/org/jmdns/jmdns/3.6.4/jmdns-3.6.4.jar"
+  },
+  {
+    "file": "slf4j-api.jar",
+    "artifact": "org.slf4j:slf4j-api:2.0.17",
+    "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
+    "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"
+  },
+  {
+    "file": "slf4j-nop.jar",
+    "artifact": "org.slf4j:slf4j-nop:2.0.17",
+    "sha256": "3716f83649ec66161a2edefd4f49df34d1dd1c51cdcf941996c6987260f0a829",
+    "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-nop/2.0.17/slf4j-nop-2.0.17.jar"
+  },
+  {
+    "file": "json.jar",
+    "artifact": "org.json:json:20240303",
+    "sha256": "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed",
+    "url": "https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar"
+  }
+]

@@ -23,7 +23,7 @@ public final class Notifications {
     private static PendingIntent alarmIntent(Context c,String key){Intent intent=new Intent(c,AlarmReceiver.class).setData(Uri.parse("keqi://notice/"+key)).putExtra("key",key);return PendingIntent.getBroadcast(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);}
     private static void schedule(Context c,String key,long at){c.getSystemService(AlarmManager.class).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,Math.max(System.currentTimeMillis()+1000,at),alarmIntent(c,key));}
     public static long due(JSONObject t){return !t.isNull("manualDue")?t.optLong("manualDue"):t.optLong("due",0);}
-    private static boolean actionable(Store store,JSONObject task){return !task.optString("status").equals("done")&&!task.optBoolean("localDone")&&store.enabled(task.optString("courseKey"));}
+    private static boolean actionable(Store store,JSONObject task){return !task.optBoolean("reminderSuppressed")&&!task.optString("status").equals("done")&&!task.optBoolean("localDone")&&store.enabled(task.optString("courseKey"));}
     public static synchronized void rebuild(Context c){
         try(Store store=new Store(c)){
             JSONArray pending=store.pendingNotices();for(int i=0;i<pending.length();i++){String key=pending.getJSONObject(i).getString("key");c.getSystemService(AlarmManager.class).cancel(alarmIntent(c,key));store.noticeState(key,"cancelled");}
@@ -31,7 +31,7 @@ public final class Notifications {
             long now=System.currentTimeMillis();JSONArray tasks=store.tasks();
             for(int i=0;i<tasks.length();i++){
                 JSONObject t=tasks.getJSONObject(i);long due=due(t);if(!actionable(store,t)||due<=now)continue;
-                int version=t.optInt("version",1);String id=t.getString("id");double urgent=Core.mostUrgent(due,now,hours);
+                int version=t.optInt("version",1);String id=t.optString("noticeId",t.getString("id"));double urgent=Core.mostUrgent(due,now,hours);
                 for(double offset:hours){long at=due-(long)(offset*3600000);if(at<=now&&Double.compare(offset,urgent)!=0)continue;
                     String kind="remind:"+offset;String key=Core.hash(id+":"+version+":"+kind);
                     at=Math.max(now+1000,Math.max(at,t.optLong("snoozeUntil",0)));if(at>=due)continue;
@@ -63,13 +63,13 @@ public final class Notifications {
                 long later=Core.quietEnd(now,prefs.getString("quietEnd"));if(later<due)schedule(c,key,later);else store.noticeState(key,"cancelled");return;
             }
             if(t.optLong("snoozeUntil",0)>now){schedule(c,key,t.getLong("snoozeUntil"));return;}
-            String label=t.optString("kind").equals("exam")?"考试":t.optString("kind").equals("quiz")?"测验":t.optString("phase").equals("peerreview")?"作业互评":"作业提交";
+            String label=t.optString("platform").equals("manual")?"待办":t.optString("kind").equals("exam")?"考试":t.optString("kind").equals("quiz")?"测验":t.optString("phase").equals("peerreview")?"作业互评":"作业提交";
             SimpleDateFormat df=new SimpleDateFormat("MM-dd HH:mm",Locale.CHINA);df.setTimeZone(Core.CN);
             long mins=Math.max(1,(due-now)/60000);String remaining=mins>=60?(long)Math.ceil(mins/60.0)+" 小时":"约 "+mins+" 分钟";
             String title=found.getString("kind").equals("change")?label+"截止时间变更":label+"提醒 · "+remaining;
             String body=CourseSelection.displayTitle(t.optString("platform"),t.optString("courseTitle"))+" · "+t.optString("title")+"\n"+df.format(new Date(due))+" 截止";
             if(t.optString("status").equals("unknown"))body+="\n平台完成状态待确认，请核实。";
-            if(now-t.optLong("deadlineCheckedAt",t.optLong("lastSeen",0))>7200000)body+="\n基于上次同步信息，打开 App 更新。";
+            if(!t.optString("platform").equals("manual")&&now-t.optLong("deadlineCheckedAt",t.optLong("lastSeen",0))>7200000)body+="\n基于上次同步信息，打开 App 更新。";
             if(post(c,key,title,body))store.noticeState(key,"posted");
             else if(now+1800000<due)schedule(c,key,now+1800000);
         }catch(Exception ignored){/* Failed deliveries remain pending and are rebuilt on next sync/open. */}
