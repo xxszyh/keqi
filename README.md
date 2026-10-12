@@ -14,11 +14,13 @@
 | --- | --- | --- |
 | ![日期分组待办](mobile/preview/列表版-示例.png) | ![搜索课程](mobile/preview/课程筛选-新版.png) | ![设置入口](mobile/preview/设置首页-新版.png) |
 
-## 0.11.0 开发版
+## 最新开发进度
 
-新增 Windows 电脑版与局域网同步、手动待办、子任务、备注、优先级、标签、批量编辑和重复任务。电脑附带运行环境，关闭窗口后驻留托盘；两端分别登录平台并独立提醒。源码与本地安装包已生成，GitHub 当前正式 Release 仍为 0.10.0。
+当前源码版本为 **安卓 0.11.1 / Windows 0.11.2**。新增 Windows 电脑版与局域网同步、手动待办、子任务、备注、优先级、标签、批量编辑和重复任务。电脑附带运行环境，关闭窗口后驻留托盘；两端分别登录平台并独立提醒。
 
-[手机与电脑使用说明](docs/DESKTOP_USAGE.md) · [桌面构建](desktop/README.md) · [功能范围](docs/DESKTOP_REQUIREMENTS.md)
+最新修复涵盖安卓启动卡顿，以及桌面 MOOC 登录跳转、未完成资源拖住连接和大页面打断任务读取。Windows 0.11.2 已在实际安装环境重复验证 MOOC 连接与完整读取；验证范围和仍需核对的边界见下方记录。源码及本地安装包已生成，GitHub 当前正式 Release 仍为 0.10.0。
+
+[手机与电脑使用说明](docs/DESKTOP_USAGE.md) · [桌面构建](desktop/README.md) · [功能范围](docs/DESKTOP_REQUIREMENTS.md) · [桌面验证记录](docs/DESKTOP_VERIFICATION.md) · [安卓验证记录](mobile/验证记录.md)
 
 ## 功能
 
@@ -28,7 +30,7 @@
 - 默认提前 3 天、1 天、3 小时提醒，支持自定义、免打扰、本地已处理、补充日期与稍后提醒。
 - 区分本轮读取与旧缓存，详情失败时保留旧截止并标明；支持深色模式。
 
-当前安装版本为 **0.10.0**。下载 [官方 APK](https://github.com/xxszyh/keqi/releases/download/v0.10.0/keqi-android-v0.10.0.apk)，安卓 8.0 及以上可安装。同签名更新可直接覆盖，卸载会删除本机数据。
+当前正式 Release 的安卓安装版本为 **0.10.0**。下载 [官方 APK](https://github.com/xxszyh/keqi/releases/download/v0.10.0/keqi-android-v0.10.0.apk)，安卓 8.0 及以上可安装。同签名更新可直接覆盖，卸载会删除本机数据。最新开发版可按照编译说明从源码构建。
 
 首次使用：在「设置 → 通知与后台」开启通知，在「设置 → 课程平台」完成官方登录并连接，在「课程管理」保留需要的课程。更多操作见 [使用说明](docs/USAGE.md)。
 
