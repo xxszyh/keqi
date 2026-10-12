@@ -28,7 +28,7 @@ cd desktop
 npm test
 ```
 
-UI 检查使用 Node 版 Playwright。可以安装开发者自己的 Playwright，或用 `KEQI_PLAYWRIGHT` 指向 Python Playwright 的 `driver/package` 目录。测试隔离到临时数据目录，隐藏主窗口，使用明确标记的匿名任务；不会访问真实账号。
+UI 与平台连接检查使用 Node 版 Playwright。可以安装开发者自己的 Playwright，或用 `KEQI_PLAYWRIGHT` 指向 Python Playwright 的 `driver/package` 目录。测试隔离到临时数据目录，隐藏主窗口，使用明确标记的匿名任务；不会访问真实账号。`tests/platform.test.js` 通过真实 Electron → JVM 验证 MOOC 登录跳转、延迟资源、运行时账号、登录失效与异常跳转，以及课程、作业和考试读取；平台响应由隔离会话内的匿名协议处理器提供。
 
 可以设置 `KEQI_PACKAGED_EXE` 为最终打包目录的 `Keqi.exe` 路径，再运行 `node --test tests/ui.test.js`，验证附带的 JVM、依赖和界面，而不是开发运行时。共享检查同样支持 `JAVA_HOME`，无需 Android SDK。
 

@@ -1,7 +1,7 @@
 {
   "name": "keqi-desktop",
   "productName": "课期",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "课程任务与个人待办，局域网手机同步",
   "main": "host/main.js",
   "author": "Keqi contributors",
@@ -22,7 +22,7 @@
         ],
         "ignore": [
           "^/runtime",
-          "^/build/core",
+          "^/build/(?!ui(?:/|$))",
           "^/lib",
           "^/jvm",
           "^/tests",

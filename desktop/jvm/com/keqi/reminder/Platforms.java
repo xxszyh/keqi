@@ -8,9 +8,15 @@ import java.util.regex.*;
 public final class Platforms {
     private final DesktopStore store;
     public Platforms(DesktopStore store){this.store=store;}
+    private String account(String platform,String cookies,Http.Page page) throws Exception {
+        String parsed=ConnectionPolicy.account(platform,cookies,page.html);
+        if(!platform.equals("mooc")||!page.browserAccount.matches("[1-9][0-9]*"))return parsed;
+        if(!parsed.isEmpty()&&!parsed.equals(page.browserAccount))throw new Http.LoginRequired();
+        return page.browserAccount;
+    }
     public JSONObject connect(String platform) throws Exception {
         Http.Page page=Http.getPage(LoginNavigation.verificationPage(platform),platform);JSONObject session=Http.transport.read(new JSONObject().put("platform",platform).put("url",page.url).put("stage","cookies"));
-        String cookies=session.optString("cookies"),account=ConnectionPolicy.account(platform,cookies,page.html);ConnectionPolicy.validate(platform,cookies,page.url,0,account);
+        String cookies=session.optString("cookies"),account=account(platform,cookies,page);ConnectionPolicy.validate(platform,cookies,page.url,0,account);
         JSONObject c=new JSONObject().put("platform",platform).put("sourceAccount",account).put("generation",UUID.randomUUID().toString()).put("connected",true).put("status","ok").put("message","官方账号已验证，正在读取任务");store.meta("connection."+platform,c);return c;
     }
     private boolean active(String platform,JSONObject captured) throws Exception {
@@ -25,7 +31,7 @@ public final class Platforms {
     public void read(String platform) throws Exception {
         JSONObject c=store.meta("connection."+platform);if(!c.optBoolean("connected"))return;List<String> warnings=new ArrayList<>();JSONArray courses=new JSONArray(),tasks=new JSONArray();String account=c.getString("sourceAccount");
         try {
-            Http.Page home=Http.getPage(LoginNavigation.verificationPage(platform),platform);JSONObject cookieResult=Http.transport.read(new JSONObject().put("platform",platform).put("url",home.url).put("stage","cookies"));String cookies=cookieResult.optString("cookies");String verified=ConnectionPolicy.account(platform,cookies,home.html);ConnectionPolicy.validate(platform,cookies,home.url,0,verified);if(!account.equals(verified))throw new Http.LoginRequired();
+            Http.Page home=Http.getPage(LoginNavigation.verificationPage(platform),platform);JSONObject cookieResult=Http.transport.read(new JSONObject().put("platform",platform).put("url",home.url).put("stage","cookies"));String cookies=cookieResult.optString("cookies");String verified=account(platform,cookies,home);ConnectionPolicy.validate(platform,cookies,home.url,0,verified);if(!account.equals(verified))throw new Http.LoginRequired();
             if(platform.equals("chaoxing")){
                 ChaoxingCourses.Catalog catalog=ChaoxingCourses.parse(home.html,home.url);courses=catalog.courses;
                 if(courses.length()==0&&!catalog.empty){String fid=ConnectionPolicy.fid(home.html);if(fid.isEmpty())throw new java.io.IOException("课程目录尚未就绪，请在登录窗口打开课程首页");String url="https://mooc2-ans.chaoxing.com/mooc2-ans/visit/courselistdata?courseType=1&courseFid="+Http.enc(fid)+"&courseTeacherid=0&courseOrderBy=0";courses=ChaoxingCourses.parse(Http.getPage(url,platform).html,url).courses;}
