@@ -6,6 +6,19 @@ const path=require('node:path');
 const os=require('node:os');
 const {Core}=require('../host/core');
 
+test('oversized commands are rejected without stopping the JVM',{timeout:15000},async()=>{
+  const data=await fs.mkdtemp(path.join(os.tmpdir(),'keqi-core-'));
+  const core=new Core(path.resolve(__dirname,'../runtime/bin/java.exe'),path.resolve(__dirname,'../build/core'),data,()=>Promise.reject(new Error('No school session in test')));
+  core.on('failure',()=>{});
+  try{
+    await core.call('initialize',{password:'temporary-integration-password'});
+    await assert.rejects(core.call('getState',{padding:'x'.repeat(16_000_000)}),/请求或平台响应过大/);
+    assert.equal(core.pending.size,0);
+    assert.equal(core.restarts,0);
+    assert.ok((await core.call('getState')).workspace);
+  }finally{core.close();await new Promise(resolve=>setTimeout(resolve,1500));await fs.rm(data,{recursive:true,force:true});}
+});
+
 test('unexpected JVM exit restores persisted tasks without a desktop restart',{timeout:30000},async()=>{
   const data=await fs.mkdtemp(path.join(os.tmpdir(),'keqi-core-'));
   const core=new Core(path.resolve(__dirname,'../runtime/bin/java.exe'),path.resolve(__dirname,'../build/core'),data,()=>Promise.reject(new Error('No school session in test')));

@@ -20,6 +20,7 @@ test('desktop commands persist through the isolated UI and JVM', {timeout:90000}
   let app;
   try{
     let opened=await launch();app=opened.app;let page=opened.page;
+    assert.equal(await page.locator('#settings-about h2').textContent(),'课期 '+await app.evaluate(({app})=>app.getVersion()));
     assert.equal(await page.locator('#preview-banner').isVisible(),false);
     await page.locator('#new-task').click();
     await page.locator('#task-title').fill('集成检查：整理课堂笔记');

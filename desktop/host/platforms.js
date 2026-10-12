@@ -25,8 +25,9 @@ class Platforms {
     window.webContents.on('will-navigate',navigate);
     if(reading){
       window.webContents.on('will-redirect',(event,url,_inPlace,isMainFrame)=>{if(event.isMainFrame??isMainFrame)navigate(event,url||event.url);});
-      window.webContents.on('did-start-navigation',(event,_url,inPlace,isMainFrame)=>{if((event.isMainFrame??isMainFrame)&&!(event.isSameDocument??inPlace)&&window.keqiReadState){window.keqiReadState.committed=false;window.keqiReadState.revision++;}});
+      window.webContents.on('did-start-navigation',(event,_url,inPlace,isMainFrame)=>{if((event.isMainFrame??isMainFrame)&&!(event.isSameDocument??inPlace)&&window.keqiReadState){window.keqiReadState.committed=false;window.keqiReadState.domReady=false;window.keqiReadState.revision++;}});
       window.webContents.on('did-navigate',()=>{if(window.keqiReadState)window.keqiReadState.committed=true;});
+      window.webContents.on('dom-ready',()=>{if(window.keqiReadState)window.keqiReadState.domReady=true;});
       window.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{if(isMainFrame&&code!==-3&&window.keqiReadState)window.keqiReadState.failed=true;});
     }
   }
@@ -47,25 +48,23 @@ class Platforms {
     const started=Date.now(),expires=started+30000;
     if(!request.keepPage||reader.keqiRequestedURL!==url){
       reader.keqiRequestedURL=null;
-      reader.keqiReadState={committed:false,blocked:false,failed:false,revision:0};
-      try{await bounded(reader.loadURL(url),expires-Date.now());}catch(error){
-        // A client redirect (including our HTTP-to-HTTPS upgrade) cancels the
-        // original navigation. Read the replacement document, never the old one.
-        if(error.code!=='ERR_ABORTED'&&error.errno!==-3)throw error;
-      }
+      const state=reader.keqiReadState={committed:false,domReady:false,blocked:false,failed:false,revision:0};
+      // loadURL waits for all resources. A valid document can be ready while
+      // a third-party image keeps loading; observe navigation errors separately.
+      reader.loadURL(url).catch(error=>{if(reader.keqiReadState===state&&error.code!=='ERR_ABORTED'&&error.errno!==-3)state.failed=true;});
       reader.keqiRequestedURL=url;
     }
-    for(let attempt=0;attempt<12;attempt++){
+    while(Date.now()<expires){
       await new Promise(resolve=>setTimeout(resolve,500));
       if(reader.isDestroyed())throw new Error('读取窗口已关闭');
       const state=reader.keqiReadState;
       if(state.blocked||state.failed)throw new Error('平台页面加载失败');
-      if(!state.committed)continue;
+      if(!state.committed||!state.domReady)continue;
       const revision=state.revision;
       let value;
-      try{value=await bounded(reader.webContents.executeJavaScript('({url:location.href,html:document.documentElement.outerHTML,browserAccount:/^[1-9][0-9]*$/.test(String(window.webUser?.id||""))?String(window.webUser.id):""})'),expires-Date.now());}catch{if(Date.now()>=expires)break;continue;}
+      try{value=await bounded(reader.webContents.mainFrame.executeJavaScript('({url:location.href,html:document.documentElement.outerHTML,browserAccount:/^[1-9][0-9]*$/.test(String(window.webUser?.id||""))?String(window.webUser.id):""})'),expires-Date.now());}catch{if(Date.now()>=expires)break;continue;}
       if(state.blocked||state.failed)throw new Error('平台页面加载失败');
-      if(!state.committed||revision!==state.revision)continue;
+      if(!state.committed||!state.domReady||revision!==state.revision)continue;
       if(value.html.length>12_000_000||!trusted(value.url,platform))throw new Error('平台响应无效');
       if(/login|mlogin/.test(new URL(value.url).pathname))return {...value,status:401};
       if(value.html.length>600&&(Date.now()-started>=2000||/暂无课程|暂无作业|暂无考试/.test(value.html)))return {...value,status:200};

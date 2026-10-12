@@ -32,6 +32,7 @@ function call(action,data={}){if(window.Native){Native.action(action,JSON.string
 window.onNativeState = payload => {state=typeof payload==='string'?JSON.parse(payload):payload;render();verifyCourseChange();};
 window.onNativeMessage = message => {toast(message);if(message.includes('失败')||message.includes('列表已变化'))pendingCourseChange=null;};
 function render(){
+  if(state.appVersion)document.querySelector('#settings-about h2').textContent='课期 '+state.appVersion;
   const tasks=activeTasks();
   $('today').textContent=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric',weekday:'long'}).format(new Date());
   $('count-urgent').textContent=tasks.filter(t=>classify(t)==='urgent').length;

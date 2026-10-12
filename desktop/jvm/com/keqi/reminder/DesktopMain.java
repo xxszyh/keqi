@@ -9,6 +9,7 @@ import org.json.*;
 
 /** Versioned, bounded JSON over pipes. No shell, credentials or raw database access in the UI. */
 public final class DesktopMain {
+    private static final int MAX_MESSAGE_CHARS=16_000_000;
     private final PrintWriter output=new PrintWriter(new OutputStreamWriter(System.out,StandardCharsets.UTF_8),true);
     private final Map<String,CompletableFuture<JSONObject>> pages=new ConcurrentHashMap<>();
     private final ExecutorService commands=Executors.newSingleThreadExecutor(),collector=Executors.newSingleThreadExecutor();
@@ -52,6 +53,6 @@ public final class DesktopMain {
         commands.submit(()->{try{JSONObject result=command(request.getString("action"),request.optJSONObject("data")==null?new JSONObject():request.getJSONObject("data"));send(new JSONObject().put("type","result").put("id",id).put("data",result));}catch(Exception e){try{send(new JSONObject().put("type","result").put("id",id).put("error",e instanceof IllegalArgumentException||e instanceof Http.LoginRequired?e.getMessage():"操作未完成，请重试"));}catch(JSONException ignored){}}});
     }
     public static void main(String[] args) throws Exception {
-        DesktopMain host=new DesktopMain(Paths.get(args[0]));try(BufferedReader input=new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8))){String line;while((line=input.readLine())!=null){if(line.length()>2000000)throw new IOException("IPC message too large");host.accept(new JSONObject(line));}}finally{host.collector.shutdownNow();host.commands.shutdownNow();host.lan.close();host.store.close();}
+        DesktopMain host=new DesktopMain(Paths.get(args[0]));try(BufferedReader input=new BufferedReader(new InputStreamReader(System.in,StandardCharsets.UTF_8))){String line;while((line=input.readLine())!=null){if(line.length()>MAX_MESSAGE_CHARS)throw new IOException("IPC message too large");host.accept(new JSONObject(line));}}finally{host.collector.shutdownNow();host.commands.shutdownNow();host.lan.close();host.store.close();}
     }
 }
